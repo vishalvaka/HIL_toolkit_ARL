@@ -1,7 +1,7 @@
 
 Cost:
   Name: "ECG_processed" # name of the cost function stream
-  time: 90 # time of the cost function stream.
+  time: 90 # time of the cost function stream. (default:90)
   n_samples: 5
   avg_time: 14 # average time of the cost function stream.
   mean_time: 5 # mean time of the cost function.
@@ -17,5 +17,19 @@ Optimization:
   acquisition: 'qei'
   kernel_function: 'se'
   GP: "Regular"
-  normalize: True  
+  normalize: True 
+  MultiObjective: 1
 
+Multi_Objective_Cost:
+  Cost1:
+    Name: "ECG_processed" # name of the first cost function stream
+    time: 90 # time of the first cost function stream. (default: 90)
+    n_samples: 5
+    avg_time: 14 # average time of the first cost function stream.
+    mean_time: 5 # mean time of the first cost function.
+  Cost2:
+    Name: "ECG_complexity" # name of the second cost function stream
+    time: 90 # time of the second cost function stream. (default: 90)
+    n_samples: 5
+    avg_time: 14 # average time of the second cost function stream.
+    mean_time: 5 # mean time of the second cost function.  

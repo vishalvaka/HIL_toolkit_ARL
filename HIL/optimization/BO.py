@@ -319,7 +319,7 @@ class BayesianOptimization(object):
             self.model = SingleTaskGP(self.x, self.y, likelihood = self.likelihood, covar_module = self.kernel.get_covr_module())
             self.model.to(self.device)
 
-        # fi the model and get the next parameter.
+        # fit the model and get the next parameter.
         new_parameter = self._step()
         
         return new_parameter

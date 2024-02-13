@@ -1,8 +1,8 @@
-RMSSD_config:
+ETC_config:
   Stream_name : "polar ECG"
   Skip_threshold : 40000000000
   Data_buffer_length: 4000
   Sampling_rate: 133
   Pubrate: 1
   # stream output information ( may be used in cost)
-  Output_stream_name: 'RMSSD'
+  Output_stream_name: 'ETC'
