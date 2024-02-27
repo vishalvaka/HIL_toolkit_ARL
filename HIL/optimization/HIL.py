@@ -115,10 +115,15 @@ class HIL:
 
     def _outlet_cost(self) -> None:
         """Create an outlet function to send when the optimization has changed"""
+        if self.MULTI_OBJECTIVE==True:
+            self.chan_count = 3
+        else:
+            self.chan_count = 2
+
         info = pylsl.StreamInfo(
             name="Change_parm",
             type="Marker",
-            channel_count=3, 
+            channel_count=self.chan_count,   # Channel count is 2, if using single objective, and 3 if using multi objective 
             source_id="12345",
         )
         self.outlet = pylsl.StreamOutlet(info)

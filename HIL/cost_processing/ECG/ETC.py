@@ -176,7 +176,7 @@ class ETC():
             if len(peaks_ms)>3: # If length of the input series is less than 3, there will be errors in the ETC calculation
                 cost = ECGComplexity.ETC(peaks_ms, "difference")
                 # P0V, P1V, P2V = ECGComplexity.symbolic_dynamics(peaks_ms, "difference")
-                # cost = P1V  # Percentage of '0V' patterns
+                # cost = P0V  # Percentage of '0V' patterns
             else:
                 cost = 0
             return cost

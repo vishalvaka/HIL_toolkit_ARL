@@ -24,7 +24,7 @@ from botorch.models.converter import batched_to_model_list, model_list_to_batche
 # os.chdir(r"./models/iter_15")
 # os.chdir(r"./models/test")
 # Import the x and y data
-df_xy = pd.read_csv("testing_data/step_freq_data.csv", delim_whitespace=True, header=None)
+df_xy = pd.read_csv("./models/test/step_freq_data.csv", delim_whitespace=True, header=None)
 
 # Extract the first column as x and convert to a 1D Numpy array
 x = df_xy.iloc[:, 0].values
@@ -40,8 +40,13 @@ print("Shape of x tensor", x_tensor.shape)
 print("Shape of y tensor", y_tensor.shape)
 
 
-# function to initialize GP models
-def initialize_model(train_x, train_y): 
+# # # Train the models and tune hyperparameters (default method in BoTorch library)
+# # fit_gpytorch_model(mll) is a method provided by BoTorch (a library built on top of PyTorch) that 
+# # performs hyperparameter optimization for Gaussian Process (GP) models. It is an alternative way to optimize the hyperparameters 
+# # of the GP model compared to using a separate optimizer.
+
+# Train the GP models and tune the hyperparameters using fit_gpytorch_model
+def _training_multi_objective_gpytorch(train_x, train_y): 
     models = []
     for i in range(train_y.shape[-1]):
         train_objective = train_y[:, i]
@@ -50,17 +55,29 @@ def initialize_model(train_x, train_y):
         )
     model_list = ModelListGP(*models)
     mll = SumMarginalLogLikelihood(model_list.likelihood, model_list)
-    return mll, model_list
 
-# # Train the models and tune hyperparameters (default method in BoTorch library)
-# fit_gpytorch_model(mll) is a method provided by BoTorch (a library built on top of PyTorch) that 
-# performs hyperparameter optimization for Gaussian Process (GP) models. It is an alternative way to optimize the hyperparameters 
-# of the GP model compared to using a separate optimizer.
+    # Fit the model (optimize hyperparameters)
+    fit_gpytorch_model(mll)
 
-mll, trained_model_list = initialize_model(x_tensor, y_tensor)
-fit_gpytorch_model(mll)
+    # Extract optimized hyperparameters
+  
+    # Objective 1
+    # Hyperparameters of the covariance module (kernel)
+    output_scale_1 = model_list.models[0].covar_module.outputscale.item()
+    length_scale_1 = model_list.models[0].covar_module.base_kernel.lengthscale.item()
 
+    # Hyperparameters of the likelihood
+    noise_variance_1 = model_list.models[0].likelihood.noise_covar.noise.item()
 
+    # Objective 2
+    # Hyperparameters of the covariance module (kernel)
+    output_scale_2 = model_list.models[1].covar_module.outputscale.item()
+    length_scale_2 = model_list.models[1].covar_module.base_kernel.lengthscale.item()
+
+    # Hyperparameters of the likelihood
+    noise_variance_2 = model_list.models[1].likelihood.noise_covar.noise.item()
+
+    return model_list, output_scale_1, length_scale_1, noise_variance_1, output_scale_2, length_scale_2, noise_variance_2
 
 
 # # # Train the models and tune the hyperparameters using the Adam optimizer.
@@ -75,12 +92,12 @@ fit_gpytorch_model(mll)
 # # predicted by the GP.
 # kernel = SE(1) # argument n_parms = 1
 # covar_module = kernel.get_covr_module()
-# noise_range = np.array([0.01, 0.05])
+# noise_range = np.array([0, 0.02])
 # _noise_constraints = noise_range 
 # likelihood = GaussianLikelihood(noise_constraint = Interval(_noise_constraints[0], _noise_constraints[1]))
 
 # # Define a function to train the models and tune the hyperparameters (using Adam optimizer)
-# def _training_multi_objective(train_x, train_y):
+# def _training_multi_objective_Adam(train_x, train_y):
 #     """
 #     Train the multi-objective model using Adam Optimizer and gradient descent.
 #     Log Marginal Likelihood is used as the cost function.
@@ -160,102 +177,107 @@ fit_gpytorch_model(mll)
 #     return model_list, output_scale_1, length_scale_1, noise_variance_1, output_scale_2, length_scale_2, noise_variance_2
 
 
-# # # Visualize the hyperparameter convergence with iterations
-# output_scale_1_list = []
-# length_scale_1_list = []
-# noise_variance_1_list = []
+# # Visualize the hyperparameter convergence with iterations
+output_scale_1_list = []
+length_scale_1_list = []
+noise_variance_1_list = []
 
-# output_scale_2_list = []
-# length_scale_2_list = []
-# noise_variance_2_list = []
-
-
-# for n in range(3, 11):
-#     trained_model_list, os_1, ls_1, nv_1, os_2, ls_2, nv_2 = _training_multi_objective(x_tensor[:n], y_tensor[:n])
-#     output_scale_1_list.append(os_1)
-#     length_scale_1_list.append(ls_1)
-#     noise_variance_1_list.append(nv_1)
-#     output_scale_2_list.append(os_2)
-#     length_scale_2_list.append(ls_2)
-#     noise_variance_2_list.append(nv_2)
+output_scale_2_list = []
+length_scale_2_list = []
+noise_variance_2_list = []
 
 
-# # Objective 1 (RMSSD)
-# # plotting noise var
-# # plt.figure(figsize=(8, 6))
-
-# iterations = range(3, 11, 1)  
-# plt.subplot(2, 3, 1)
-# plt.plot(iterations, noise_variance_1_list, marker='o', linestyle='-', color='blue')
-# plt.title(f'Noise variance versus iterations \n Objective 1 (RMSSD)')
-# plt.xlabel('Iteration')
-# plt.ylabel('Noise variance')
-# plt.grid(True)
+for n in range(3, 11):
+    #trained_model_list, os_1, ls_1, nv_1, os_2, ls_2, nv_2 = _training_multi_objective_Adam(x_tensor[:n], y_tensor[:n])
+    trained_model_list, os_1, ls_1, nv_1, os_2, ls_2, nv_2 = _training_multi_objective_gpytorch(x_tensor[:n], y_tensor[:n])
+    output_scale_1_list.append(os_1)
+    length_scale_1_list.append(ls_1)
+    noise_variance_1_list.append(nv_1)
+    output_scale_2_list.append(os_2)
+    length_scale_2_list.append(ls_2)
+    noise_variance_2_list.append(nv_2)
 
 
-# # plotting length scale
+# Objective 1 (RMSSD)
+# plotting noise var
+# plt.figure(figsize=(8, 6))
 
-# #plt.figure(figsize=(8, 6))
-# plt.subplot(2, 3, 2)
-# plt.plot(iterations, length_scale_1_list, marker='o', linestyle='-', color='red')
-# plt.title(f'Length scale versus iterations \n Objective 1 (RMSSD)')
-# plt.xlabel('Iteration')
-# plt.ylabel('Length scale')
-# plt.grid(True)
-
-
-# # plotting output scale variance
-
-# #plt.figure(figsize=(8, 6))
-# plt.subplot(2, 3, 3)
-# plt.plot(iterations, output_scale_1_list, marker='o', linestyle='-', color='green')
-# plt.title(f'Output scale versus iterations \n Objective 1 (RMSSD)')
-# plt.xlabel('Iteration')
-# plt.ylabel('Output scale')
-# plt.grid(True)
+iterations = range(3, 11, 1)  
+plt.subplot(2, 3, 1)
+plt.plot(iterations, noise_variance_1_list, marker='o', linestyle='-', color='blue')
+plt.title(f'Noise variance versus iterations \n Objective 1 (RMSSD)')
+plt.xlabel('Iteration')
+plt.ylabel('Noise variance')
+plt.grid(True)
 
 
-# # Objective 2 (ETC)
-# # plotting noise var
-# #plt.figure(figsize=(8, 6))
+# plotting length scale
+
+#plt.figure(figsize=(8, 6))
+plt.subplot(2, 3, 2)
+plt.plot(iterations, length_scale_1_list, marker='o', linestyle='-', color='red')
+plt.title(f'Length scale versus iterations \n Objective 1 (RMSSD)')
+plt.xlabel('Iteration')
+plt.ylabel('Length scale')
+plt.grid(True)
+
+
+# plotting output scale variance
+
+#plt.figure(figsize=(8, 6))
+plt.subplot(2, 3, 3)
+plt.plot(iterations, output_scale_1_list, marker='o', linestyle='-', color='green')
+plt.title(f'Output scale versus iterations \n Objective 1 (RMSSD)')
+plt.xlabel('Iteration')
+plt.ylabel('Output scale')
+plt.grid(True)
+
+
+# Objective 2 (ETC)
+# plotting noise var
+#plt.figure(figsize=(8, 6))
     
-# plt.subplot(2, 3, 4)  
-# plt.plot(iterations, noise_variance_2_list, marker='o', linestyle='-', color='blue')
-# plt.title(f'Noise variance versus iterations \n Objective 2 (ETC)')
-# plt.xlabel('Iteration')
-# plt.ylabel('Noise variance')
-# plt.grid(True)
+plt.subplot(2, 3, 4)  
+plt.plot(iterations, noise_variance_2_list, marker='o', linestyle='-', color='blue')
+plt.title(f'Noise variance versus iterations \n Objective 2 (ETC)')
+plt.xlabel('Iteration')
+plt.ylabel('Noise variance')
+plt.grid(True)
 
 
-# # plotting length scale
+# plotting length scale
 
-# #plt.figure(figsize=(8, 6))
-# plt.subplot(2, 3, 5)  
-# plt.plot(iterations, length_scale_2_list, marker='o', linestyle='-', color='red')
-# plt.title(f'Length scale versus iterations \n Objective 2 (ETC)')
-# plt.xlabel('Iteration')
-# plt.ylabel('Length scale')
-# plt.grid(True)
+#plt.figure(figsize=(8, 6))
+plt.subplot(2, 3, 5)  
+plt.plot(iterations, length_scale_2_list, marker='o', linestyle='-', color='red')
+plt.title(f'Length scale versus iterations \n Objective 2 (ETC)')
+plt.xlabel('Iteration')
+plt.ylabel('Length scale')
+plt.grid(True)
 
 
-# # plotting output scale variance
+# plotting output scale variance
 
-# #plt.figure(figsize=(8, 6))
-# plt.subplot(2, 3, 6)
-# plt.plot(iterations, output_scale_2_list, marker='o', linestyle='-', color='green')
-# plt.title(f'Output scale versus iterations \n Objective 2 (ETC)')
-# plt.xlabel('Iteration')
-# plt.ylabel('Output scale')
-# plt.grid(True)
-# plt.subplots_adjust(wspace=0.8, hspace=0.4)
-# plt.show()
+#plt.figure(figsize=(8, 6))
+plt.subplot(2, 3, 6)
+plt.plot(iterations, output_scale_2_list, marker='o', linestyle='-', color='green')
+plt.title(f'Output scale versus iterations \n Objective 2 (ETC)')
+plt.xlabel('Iteration')
+plt.ylabel('Output scale')
+plt.grid(True)
+plt.subplots_adjust(wspace=0.8, hspace=0.4)
+plt.show()
 
 
 
 # # # Plot the final models (GPs for Objective 1 (RMSSD) and Objective 2 (ETC))
 
-# # Call the _training_multi_objective method,  also optimizes the hyperparameters and fits the model, returns the trained model list and optimized hyperparameters
-# trained_model_list, os_1, ls_1, nv_1, os_2, ls_2, nv_2 = _training_multi_objective(x_tensor, y_tensor)
+# # Call the _training_multi_objective_Adam method, which optimizes the hyperparameters and fits the model, returns the trained model list and optimized hyperparameters
+# trained_model_list, os_1, ls_1, nv_1, os_2, ls_2, nv_2 = _training_multi_objective_Adam(x_tensor, y_tensor)
+
+
+# Call the _training_multi_objective_gpytorch method, which optimizes the hyperparameters and fits the model, returns the trained model list and optimized hyperparameters
+trained_model_list, os_1, ls_1, nv_1, os_2, ls_2, nv_2 = _training_multi_objective_gpytorch(x_tensor, y_tensor)
 
 # Generate test points for plotting in the range [0, 1]
 test_x = torch.linspace(0, 1, 100).unsqueeze(-1)
