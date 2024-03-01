@@ -25,6 +25,8 @@ class HIL:
             # normalization
         if self.args["Optimization"]["normalize"]:
             self.NORMALIZATION = True
+        else:
+            self.NORMALIZATION = False
         
         if self.args["Optimization"]["MultiObjective"] == 1:
             self.MULTI_OBJECTIVE = True
@@ -162,6 +164,7 @@ class HIL:
                 n_parms=args["n_parms"],
                 range=np.array(list(args["range"])),
                 model_save_path=args["model_save_path"],
+                acq = args["acquisition"]
             )
 
     def _start_cost(self, args: dict) -> None:
@@ -230,6 +233,7 @@ class HIL:
                         # add reset time function 
                         # self.start_time=0 or time_stamp?
                         out = input("Press Y to record the data: N to remove it:")
+                        print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
                         if out == "N":
                             self._reset_data_collection()
                             print("#########################")
@@ -286,6 +290,7 @@ class HIL:
                     print(f" cost is {mean_costs}")
                     
                     out = input("Press Y to record the data: N to remove it:")
+                    print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
                     if out == "N":
                         self._reset_data_collection()
                         print("################################")
@@ -327,6 +332,7 @@ class HIL:
                     self.outlet.push_sample(self.x[self.n,:].tolist() + [0, 0])    # cost has two objectives
                     if (self.cost_time - self.start_time) > self.args["Cost"]["time"]:
                         out = input("Press Y to record the data: N to remove it:")
+                        print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
                         if out == "N":
                             self._reset_data_collection()
                             print("################################")
@@ -404,6 +410,7 @@ class HIL:
                     ) > 5:  # 30 for 120
                         print(f" cost is {np.mean(self.store_cost_data[-5:])}")
                         out = input("Press Y to record the data: N to remove it:")
+                        print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
                         if out == "N":
                             self._reset_data_collection()
                             print("#########################")
@@ -443,6 +450,7 @@ class HIL:
                 ):
                     print(f" cost is {np.mean(self.store_cost_data[-5:])}")
                     out = input("Press Y to record the data: N to remove it:")
+                    print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
                     if out == "N":
                         self._reset_data_collection()
                         print("################################")
@@ -484,6 +492,7 @@ class HIL:
                     self.outlet.push_sample(self.x[self.n,:].tolist() + [0])
                     if (self.cost_time - self.start_time) > self.args["Cost"]["time"]:
                         out = input("Press Y to record the data: N to remove it:")
+                        print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
                         if out == "N":
                             self._reset_data_collection()
                             print("################################")

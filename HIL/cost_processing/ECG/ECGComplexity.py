@@ -267,7 +267,7 @@ def ETC(InputTS, symbolize):
     # normalised ETC
     N_norm = N/(len(y)-1)   # need to use y because the length of the variable 'InputTS' may decrease by 1 if difference or threshold based symbolization is done.  
     
-    return N_norm
+    return N
 
 
 # Function to convert RR interval times series into a symbolic sequence based on variation in three consecutive symbols

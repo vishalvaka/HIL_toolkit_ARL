@@ -56,6 +56,7 @@ class BayesianOptimization(object):
         
         self.n_parms = n_parms
         self.range = range.reshape(2,self.n_parms).astype(float)
+        self.norm_range = np.array([0,1]).reshape(2,1).astype(float) # normalized range of parameters (if Normalization is True in the config file)
         self.maximization = maximization
         
         if len(model_save_path):
@@ -175,10 +176,11 @@ class BayesianOptimization(object):
             # TODO add other acquisition functions
             best_f = self._get_data_best()
             acq = ProbabilityOfImprovement(self.model, best_f, sampler=IIDNormalSampler(self.N_POINTS, seed = 1234)) #type: ignore
-            pass
+        pass
         new_point, value  = optimize_acqf(
             acq_function = acq,
             bounds=torch.tensor(self.range).to(self.device),
+            # bounds=torch.tensor(self.norm_range).to(self.device),
             q = 1,
             num_restarts=1000,
             raw_samples=2000,
