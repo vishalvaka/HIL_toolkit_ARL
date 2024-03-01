@@ -194,6 +194,7 @@ class HIL:
             )
 
     def start(self):
+        print('start')
         if self.MULTI_OBJECTIVE:
             if self.n == 0:
                 print(f"############################################################")
@@ -391,6 +392,7 @@ class HIL:
                 self.outlet.push_sample(self.x[0,:].tolist() + [0])
             # start the optimization loop.
             while self.n < self.args["Optimization"]["n_steps"]:
+                print('n = ', self.n)
                 # Still in exploration
                 if self.n < self.args["Optimization"]["n_exploration"]:
                     print(
