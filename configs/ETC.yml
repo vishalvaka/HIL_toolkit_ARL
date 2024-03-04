@@ -1,5 +1,5 @@
 ETC_config:
-  Stream_name : "polar ECG"
+  Stream_name : "polar ECG 2"
   Skip_threshold : 40000000000
   Data_buffer_length: 4000
   Sampling_rate: 133

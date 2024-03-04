@@ -404,6 +404,8 @@ class HIL:
                         self.warm_up = False
     
                     self._get_cost()
+                    print('self.store_cost_data ', self.store_cost_data)
+                    print('get cost done')
                     self.outlet.push_sample(self.x[self.n,:].tolist() + [0])
                     if (self.cost_time - self.start_time) > self.args["Cost"][
                         "time"
@@ -552,6 +554,7 @@ class HIL:
         print(f"###### start functions are {self.x} ######")
 
     def _get_cost(self) -> None:
+        print('calling _get_cost')
         """This function extracts cost from pylsl, need to be called all the time."""
         if self.MULTI_OBJECTIVE:
             for i, cost in enumerate(self.cost):
@@ -578,6 +581,7 @@ class HIL:
                 self.cost_time = time_stamp
                 self.store_cost_data.append(data)
                 if len(self.store_cost_data) == 1:
+                    print('updating start time to ', time_stamp)
                     self.start_time = time_stamp
                 print(
                     f"got cost {self.store_cost_data[-1]}, parameter {self.x[self.n]}, time: {self.cost_time - self.start_time}"

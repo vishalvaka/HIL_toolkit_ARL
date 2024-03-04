@@ -12,7 +12,7 @@ def start_polar(address):
     """
     Start the Polar data collection.
     """
-    polar_inst=Polar(address)
+    polar_inst=Polar(address, ecg_name="polar ECG 2")
     # start the Polar data collection
     # polar(polar_address)
     os.environ["PYTHONASYNCIODEBUG"] = str(1)

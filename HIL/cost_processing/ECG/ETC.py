@@ -39,8 +39,8 @@ class ETCInOut(InletOutlet):
         self.store_data = np.array([])
 
         # Information about the outlet stream
-        info  = pylsl.StreamInfo('ECG_complexity', 'Marker', 1, 0, 'float32', 'myuidw43539') #type: ignore
-        self.outlet = pylsl.StreamOutlet(info)
+        # info  = pylsl.StreamInfo('ECG_complexity', 'Marker', 1, 0, 'float32', 'myuidw43539') #type: ignore
+        self.outlet = pylsl.StreamOutlet(pylsl.StreamInfo('ECG_complexity', 'Marker', 1, 0, 'float32', 'myuidw43539'))
 
         # logging
         self._logger = logging.getLogger()
@@ -51,7 +51,7 @@ class ETCInOut(InletOutlet):
 
         # Main processing class
         self.etc = ETC(self.SAMPLING_RATE)
-
+        
         # flags
         self.first_data = True
         self.cleaned = np.array([])
@@ -63,11 +63,14 @@ class ETCInOut(InletOutlet):
         Returns:
             None: early return if the stream if not ECG
         """
+
+        print('in get data')
         _, ts = self.inlet.pull_chunk(timeout = 0.0, 
                 max_samples=self.buffer.shape[0],
                 dest_obj=self.buffer)
 
-        if not ts or self.name != "polar ECG":
+        if not ts or self.name != "polar ECG 2":
+            print('ts ', ts)
             self._logger.warning(f"Time stamp is: {ts}, name of the stream: {self.name}")
             return None
         
@@ -125,6 +128,7 @@ class ETC():
         """
         self.SAMPLING_RATE = sampling_rate
         self.cleaned = np.array([])
+        # self.raw_data = None
         
     def add_data(self, data: np.ndarray) -> None:
         """Add data which needs to processed
@@ -224,3 +228,7 @@ class ETCFromStream():
                     inlet.send_data()
                 else:
                     logging.warn(f"{__name__}: no data to send")
+
+
+'''ETCInOut class takes streamInfo class which is the inlet stream.
+   but it is being overwritten in the constructor'''

@@ -17,7 +17,7 @@ Optimization:
   acquisition: 'ei'
   kernel_function: 'se'
   GP: "Regular"
-  normalize: True # If true, change the range in BO.py
+  normalize: False # If true, change the range in BO.py
   MultiObjective: 0
 
 Multi_Objective_Cost:
