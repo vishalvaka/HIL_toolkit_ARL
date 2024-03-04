@@ -1,7 +1,7 @@
 
 Cost:
   Name: "ECG_complexity" # name of the cost function stream
-  time: 15 # time of the cost function stream. (default:90)
+  time: 90 # time of the cost function stream. (default:90)
   n_samples: 5
   avg_time: 14 # average time of the cost function stream.
   mean_time: 5 # mean time of the cost function.

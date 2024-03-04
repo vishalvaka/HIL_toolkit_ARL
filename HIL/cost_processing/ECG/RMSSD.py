@@ -69,7 +69,7 @@ class RMSSDInOut(InletOutlet):
                 max_samples=self.buffer.shape[0],
                 dest_obj=self.buffer)
 
-        if not ts or self.name != "polar ECG":
+        if not ts or self.name != "polar ECG 2":
             self._logger.warning(f"Time stamp is: {ts}, name of the stream: {self.name}")
             return None
         

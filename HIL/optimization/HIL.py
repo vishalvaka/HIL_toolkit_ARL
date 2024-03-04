@@ -158,11 +158,11 @@ class HIL:
         print(args["range"][0], args["range"][1])
         print(np.array(list(args["range"])))
         if self.MULTI_OBJECTIVE:
-            self.MOBO = MultiObjectiveBayesianOptimization()
+            self.MOBO = MultiObjectiveBayesianOptimization(np.array(list(args["range"])) if args["normalize"] else [[0.0], [1.0]])
         else:
             self.BO = BayesianOptimization(
                 n_parms=args["n_parms"],
-                range=np.array(list(args["range"])),
+                range=np.array(np.array(list(args["range"])) if args["normalize"] else [[0.0], [1.0]]),
                 model_save_path=args["model_save_path"],
                 acq = args["acquisition"]
             )

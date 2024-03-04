@@ -19,14 +19,14 @@ from HIL.optimization.kernel import SE, Matern
 
 class MultiObjectiveBayesianOptimization(object):
 
-    def __init__(self) -> None:
+    def __init__(self, bounds) -> None:
         
         """Multi-objective Bayesian optimization for HIL"""
         
         self.NUM_RESTARTS =  10
         self.RAW_SAMPLES = 1024
     
-        self.standard_bounds = torch.tensor([[0.0], [1.0]])
+        self.standard_bounds = torch.tensor(bounds)
         self.MC_SAMPLES = 256
         #bounds = torch.tensor([[-1.2], [1.2]])
     
