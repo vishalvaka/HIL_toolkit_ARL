@@ -162,7 +162,7 @@ class HIL:
         else:
             self.BO = BayesianOptimization(
                 n_parms=args["n_parms"],
-                range=np.array(np.array(list(args["range"])) if args["normalize"] else [[0.0], [1.0]]),
+                range=np.array(np.array(list(args["range"])) if not args["normalize"] else [[0.0], [1.0]]),
                 model_save_path=args["model_save_path"],
                 acq = args["acquisition"]
             )
