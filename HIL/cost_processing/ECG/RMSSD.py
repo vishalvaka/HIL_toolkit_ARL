@@ -140,7 +140,7 @@ class RMSSD():
 
         """Clean the data and perform a quality check
         """
-        self.cleaned = nk.ecg_clean(self.raw_data[-4000:], sampling_rate=self.SAMPLING_RATE)
+        self.cleaned = nk.ecg_clean(self.raw_data[-8000:], sampling_rate=self.SAMPLING_RATE)
 
         try:
             self.quality = nk.ecg_quality(self.cleaned, method = 'zhao', sampling_rate=self.SAMPLING_RATE)
@@ -221,6 +221,7 @@ class RMSSDFromStream():
                         sampling_rate=config['Sampling_rate'], skip_threshold=config['Skip_threshold']))
 
     def run(self) -> None:
+        print('run\n\n\n\n\n\n\n\n\n\n')
         """Main run ( in the while loop )
         """
 

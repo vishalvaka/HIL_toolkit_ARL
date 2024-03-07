@@ -4,21 +4,52 @@ from HIL.cost_processing.utils.inlet import InletOutlet
 import pylsl
 import numpy as np
 import time
+import torch
+import yaml
+
+noise_level = 0.0
+
+args = yaml.safe_load(open('configs/test_function.yml','r'))
+
 
 def cost_function(x):
     x = np.array(x)
     return sum(- (x - 5 ) ** 2  + 100 + np.random.rand(1) * 0.1)
 
+def f(x, noise_level=noise_level):
+    results = []
+    for x_i in x:
+        print('x_i', x_i)
+        x_i[0] = (x_i[0] - args["Optimization"]["range"][0])/(args["Optimization"]["range"][1] - args["Optimization"]["range"][0])   
+        sub_results = [
+         (np.sin(6 *x_i[0])**3 * (1 - np.tanh(x_i[0] ** 2))) + (-1 + torch.rand(1)[0] * 2) * noise_level,
+         .5 - (np.cos(5 * x_i[0] + 0.7)**3 * (1 - np.tanh(x_i[0] ** 2))) + (-1 + torch.rand(1)[0] * 2) * noise_level,
+      ]
+        results.append(sub_results)
+    return torch.tensor(results, dtype=torch.float32)
 
 class test_cost_function:
     """Test the cost function class"""
     # create a fake stream
+    
     def __init__(self) -> None:
-        info = pylsl.StreamInfo(name='test_function', type='cost', channel_count=1,
+        self.channel_count = 1
+        if args["Optimization"]["MultiObjective"]:
+            channel_count = 2
+
+        
+        info = pylsl.StreamInfo(name='test_function', type='cost', channel_count=self.channel_count,
                                 nominal_srate=pylsl.IRREGULAR_RATE,
                                 channel_format=pylsl.cf_double64,
                                 source_id='test_function_id')
         self.outlet = pylsl.StreamOutlet(info)
+
+        if args["Optimization"]["MultiObjective"]:
+            self.outlet2 = pylsl.StreamOutlet(pylsl.StreamInfo(name='test_function_2', type='cost', channel_count=self.channel_count,
+                                nominal_srate=pylsl.IRREGULAR_RATE,
+                                channel_format=pylsl.cf_double64,
+                                source_id='test_function_id'))
+
         pylsl.local_clock()
         self.inlet = None
 
@@ -41,14 +72,14 @@ class test_cost_function:
         """Get the cost function"""
         sample, timestamp = self.inlet.pull_sample()
 
-        print(sample, timestamp)
+        # print(sample, timestamp)
         if timestamp:
-            print(timestamp, sample)
+            # print(timestamp, sample)
             self.inlet.flush()
             pass
-            # sample = sample[-1]
-            # print(f"Received {sample} at time {timestamp}")
-            # self.x_parmeter = sample[:2]
+            # sample = sample[0]
+            print(f"Received {sample} at time {timestamp}")
+            self.x_parmeter = sample
 
     def run(self,) -> None:
         """Main run function for the cost function this will take the parameters and send the cost function to the outlet.
@@ -65,8 +96,17 @@ class test_cost_function:
             else:
                 self._get_cost()
                 x_parmeter = self.x_parmeter
-                # print(x_parmeter, cost_function(x_parmeter))
-                self.outlet.push_sample([cost_function(x_parmeter)])
+                # print(f'cost function for {x_parmeter}, {cost_function(x_parmeter)}')
+                # print(f([x_parmeter], noise_level))
+                if not args["Optimization"]["MultiObjective"]:
+                    self.outlet.push_sample([cost_function(x_parmeter)])
+                else:
+                    func_result = f([x_parmeter], noise_level=noise_level)
+                    print('func_result', func_result)
+                    result1 = func_result[0][0].item()  # Convert to Python scalar
+                    result2 = func_result[0][1].item()  # Convert to Python scalar
+                    self.outlet.push_sample([result1])
+                    self.outlet2.push_sample([result2])
                 # if counter > 10:
                 #     del self.inlet
                 #     self._get_streams()
