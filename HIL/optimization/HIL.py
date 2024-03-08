@@ -404,7 +404,15 @@ class HIL:
                         self.warm_up = False
     
                     self._get_cost()
-                    print('self.store_cost_data ', self.store_cost_data)
+                    # if len(self.store_cost_data) == 1: #and self.start_time != 0:
+                    #     print('in my if condition')
+                    #     _, time_stamp = self.cost.extract_data()
+
+                    #     if time_stamp is not None:
+                    #         self.start_time = time_stamp
+                    #         print(f'updated start_time to {self.start_time} in my if condition')
+
+                    # print('self.store_cost_data ', self.store_cost_data)
                     print('get cost done')
                     self.outlet.push_sample(self.x[self.n,:].tolist() + [0])
                     if (self.cost_time - self.start_time) > self.args["Cost"][
@@ -443,9 +451,12 @@ class HIL:
                             self.outlet.push_sample(
                                 self.x_opt[-1].tolist() + [self.y_opt[-1]]
                             )
+                            # self._get_cost
                             self._reset_data_collection()
                             self.n += 1
                             input("Enter to Continue")
+                            _, self.start_time = self.cost.extract_data()
+
     
                 # Exploration is done and starting the optimization
                 elif (
@@ -489,6 +500,7 @@ class HIL:
                             axis=0,
                         )
                         self.OPTIMIZATION = True
+                        _, self.start_time = self.cost.extract_data()
     
                 else:
                     print(f"In the optimization loop {self.n}, parameter {self.x[self.n]}")
@@ -537,6 +549,7 @@ class HIL:
                             # self.outlet.push_sample([self.x_opt[self.n,:].tolist(), self.y_opt[-1].tolist()])
                             self._reset_data_collection()
                             input("Enter to contiue")
+                            _, self.start_time = self.cost.extract_data()
                 time.sleep(1)       
         
             

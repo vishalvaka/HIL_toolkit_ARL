@@ -17,8 +17,8 @@ Optimization:
   acquisition: 'ei'
   kernel_function: 'se'
   GP: "Regular"
-  normalize: True
-  MultiObjective: 1            
+  normalize: False
+  MultiObjective: 0            
 
 Multi_Objective_Cost:
   Cost1:
