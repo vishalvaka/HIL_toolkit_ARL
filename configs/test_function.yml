@@ -1,16 +1,16 @@
 
 Cost:
   Name: "test_function" # name of the cost function stream
-  time: 5 # time of the cost function stream.
+  time: 1 # time of the cost function stream.
   n_samples: 5
   avg_time: 5 # average time of the cost function stream.
   mean_time: 5 # mean time of the cost function.
 
 Optimization:
   n_parms: 1 # number of parametes
-  n_steps: 15 # number of steps
+  n_steps: 20 # number of steps
   n_exploration: 3 # number of exploration steps
-  range: [0, 85] # range of the parameters
+  range: [[-1.2], [1.2]] # range of the parameters
   model_save_path: "models/"
   device: "cuda" # device to use
   n_start_points: 3 # number of start points
@@ -18,18 +18,18 @@ Optimization:
   kernel_function: 'se'
   GP: "Regular"
   normalize: False
-  MultiObjective: 0            
+  MultiObjective: 1            
 
 Multi_Objective_Cost:
   Cost1:
     Name: "test_function" # name of the first cost function stream
-    time: 90 # time of the first cost function stream. (default: 90)
+    time: 1 # time of the first cost function stream. (default: 90)
     n_samples: 5
     avg_time: 14 # average time of the first cost function stream.
     mean_time: 5 # mean time of the first cost function.
   Cost2:
     Name: "test_function_2" # name of the second cost function stream
-    time: 90 # time of the second cost function stream. (default: 90)
+    time: 1 # time of the second cost function stream. (default: 90)
     n_samples: 5
     avg_time: 14 # average time of the second cost function stream.
     mean_time: 5 # mean time of the second cost function. 

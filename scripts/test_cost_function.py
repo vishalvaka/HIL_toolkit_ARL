@@ -20,13 +20,24 @@ def f(x, noise_level=noise_level):
     results = []
     for x_i in x:
         print('x_i', x_i)
-        x_i[0] = (x_i[0] - args["Optimization"]["range"][0])/(args["Optimization"]["range"][1] - args["Optimization"]["range"][0])   
+        # x_i[0] = (x_i[0] - args["Optimization"]["range"][0])/(args["Optimization"]["range"][1] - args["Optimization"]["range"][0])   
         sub_results = [
          (np.sin(6 *x_i[0])**3 * (1 - np.tanh(x_i[0] ** 2))) + (-1 + torch.rand(1)[0] * 2) * noise_level,
          .5 - (np.cos(5 * x_i[0] + 0.7)**3 * (1 - np.tanh(x_i[0] ** 2))) + (-1 + torch.rand(1)[0] * 2) * noise_level,
       ]
         results.append(sub_results)
     return torch.tensor(results, dtype=torch.float32)
+
+# def f(x, noise_level = noise_level):
+#     results = []
+#     for x_i in x:
+#         print(x_i)
+#         sub_results = [
+#             np.array(x_i[0]) ** 2,
+#             np.array(x_i[0]) ** 4
+#         ]
+#         results.append(np.array(sub_results))
+#     return torch.tensor(results, dtype=torch.float32)
 
 class test_cost_function:
     """Test the cost function class"""

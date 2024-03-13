@@ -158,7 +158,7 @@ class HIL:
         print(args["range"][0], args["range"][1])
         print(np.array(list(args["range"])))
         if self.MULTI_OBJECTIVE:
-            self.MOBO = MultiObjectiveBayesianOptimization(np.array(list(args["range"])) if args["normalize"] else [[0.0], [1.0]])
+            self.MOBO = MultiObjectiveBayesianOptimization(np.array(list(args["range"])) if not args["normalize"] else [[0.0], [1.0]])
         else:
             self.BO = BayesianOptimization(
                 n_parms=args["n_parms"],
@@ -217,12 +217,12 @@ class HIL:
     
                     self._get_cost()    # here, self.start_time is set to time_stamp (time stamp of the cost function from the LSL)
                     self.outlet.push_sample(self.x[self.n,:].tolist() + [0, 0])   # cost has two objectives
-                    if (self.cost_time - self.start_time) > self.args["Cost"][
+                    if (self.cost_time - self.start_time) > self.args["Multi_Objective_Cost"]["Cost1"][
                         "time"
                     ] and len(
                         self.store_cost_data[0]
-                    ) > 5:  # 30 for 120
-    
+                    ) > self.args["Multi_Objective_Cost"]["Cost1"]["n_samples"]:  # 30 for 120
+                        print('time diff ', self.cost_time - self.start_time)
                         # Calculate the mean cost
                         # Extract the last 5 elements for each objective
                         last_5_elements = [obj[-5:] for obj in self.store_cost_data]
@@ -275,6 +275,7 @@ class HIL:
                             self._reset_data_collection()
                             self.n += 1
                             input("Enter to Continue")
+                            _, self.start_time = self.cost[0].extract_data()
     
                 # Exploration is done and starting the optimization
                 elif (
@@ -326,12 +327,17 @@ class HIL:
                             axis=0,
                         )
                         self.OPTIMIZATION = True
+                        _, self.start_time = self.cost[0].extract_data()
 
                 else:
                     print(f"In the optimization loop {self.n}, parameter {self.x[self.n]}")
                     self._get_cost()
                     self.outlet.push_sample(self.x[self.n,:].tolist() + [0, 0])    # cost has two objectives
-                    if (self.cost_time - self.start_time) > self.args["Cost"]["time"]:
+                    if (self.cost_time - self.start_time) > self.args["Multi_Objective_Cost"]["Cost1"][
+                        "time"
+                    ] and len(
+                        self.store_cost_data[0]
+                    ) > self.args["Multi_Objective_Cost"]["Cost1"]["n_samples"]:
                         out = input("Press Y to record the data: N to remove it:")
                         print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
                         if out == "N":
@@ -362,7 +368,7 @@ class HIL:
                                 new_parameter = self._denormalize_x(new_parameter)
     
                             else:
-                                new_parameter = self.BO.run(
+                                new_parameter = self.MOBO.generate_next_candidate(
                                     self.x_opt,
                                     self.y_opt,
                                 )
@@ -380,6 +386,7 @@ class HIL:
                             # self.outlet.push_sample([self.x_opt[self.n,:].tolist(), self.y_opt[-1].tolist()])
                             self._reset_data_collection()
                             input("Enter to contiue")
+                            _, self.start_time = self.cost[0].extract_data()
                 time.sleep(1)
 
         else:
