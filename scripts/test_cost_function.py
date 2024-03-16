@@ -33,11 +33,29 @@ def f(x, noise_level=noise_level):
 #     for x_i in x:
 #         print(x_i)
 #         sub_results = [
-#             np.array(x_i[0]) ** 2,
-#             np.array(x_i[0]) ** 4
+#             np.array(x_i[0] - 4) ** 2,
+#             np.array(x_i[0]) ** 2
 #         ]
 #         results.append(np.array(sub_results))
 #     return torch.tensor(results, dtype=torch.float32)
+
+# def f(x, A=10, noise_level = noise_level):
+#     results = []
+#     for x_i in x:
+#         # Rastrigin function for the first component
+#         rastrigin_result = A * len(x_i) + sum([(xi ** 2 - A * np.cos(2 * np.pi * xi)) for xi in x_i])
+        
+#         # Sphere function for the second component
+#         sphere_result = sum([xi ** 2 for xi in x_i])
+        
+#         sub_results = [
+#             np.array(rastrigin_result),
+#             np.array(sphere_result)
+#         ]
+#         results.append(np.array(sub_results))
+#     return torch.tensor(results, dtype=torch.float32)
+
+
 
 class test_cost_function:
     """Test the cost function class"""
