@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import yaml
 from botorch.utils.multi_objective.pareto import is_non_dominated
 import numpy as np
+import torch
+from scripts.test_cost_function import f
+
 
 # def is_non_dominated_simple(scores):
 #     is_pareto = np.ones(scores.shape[0], dtype=bool)
@@ -13,7 +16,7 @@ import numpy as np
 #                 break
 #     return is_pareto
 
-# Assuming the file is named 'data.csv' and located in the current working directory
+
 args = yaml.safe_load(open('configs/test_function.yml','r'))
 filename = 'models/iter_' + str(args['Optimization']['n_steps']) + '/data.csv'
 
@@ -31,18 +34,37 @@ y2 = data[:, 2]
 x = np.array(x)
 # x_norm = (x - x.min()) / (x.max() - x.min(    ))
 
-# Plotting
-plt.figure(figsize=(12, 6))
+# The original function
+bounds = torch.tensor(args["Optimization"]["range"])
+xs = np.linspace(bounds[0][0], bounds[1][0], 1000)
+xs = xs.reshape((1000, -1))
+ys_true = f(xs, noise_level=0).numpy()
+
+# # Plotting
+# plt.figure(figsize=(12, 6))
+
+plt.plot(xs, ys_true, label=["F1", "F2"])
+# the fill method constructs a polygon of the specified color delimited by all the point
+# in the xs and ys arrays.
+# plt.fill(np.concatenate([xs, xs[::-1]]),
+#          np.concatenate(([fx_i - 1 * noise_level for fx_i in ys_true],
+#                          [fx_i + 1 * noise_level for fx_i in ys_true[::-1]])),
+#          alpha=.2, ec="None")
+# plt.legend()
+# plt.xlabel('x')
+# plt.ylabel('Objectives')
+# plt.grid()
+# plt.show()
 
 # Plot y1 vs x
-plt.plot(x, y1, 'o-', label='y1')
+plt.plot(x, y1, 'o', label='y1', color = "blue")
 
 # Plot y2 vs x on the same graph
-plt.plot(x, y2, 's-', label='y2', color='orange')
+plt.plot(x, y2, 's', label='y2', color='orange')
 
-plt.title('Y1 and Y2 vs X')
-plt.xlabel('X')
-plt.ylabel('Values')
+plt.title('F1 and F2 vs parameter (x)')
+plt.xlabel('Parameter (x)')
+plt.ylabel('Objective Values')
 plt.grid(True)
 plt.legend()
 
