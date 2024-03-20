@@ -44,8 +44,8 @@ axes.plot(pareto_front_sorted[:, 0], pareto_front_sorted[:, 1], color='black', l
 axes.scatter(pareto_front_sorted[:, 0], pareto_front_sorted[:, 1], edgecolor='black', facecolor='none', alpha=0.5, s=100, label='Pareto Points')
 
 # Adding labels and title
-axes.set_xlabel("Function 1 Output")
-axes.set_ylabel("Function 2 Output")
+axes.set_xlabel("Objective 1")
+axes.set_ylabel("Objective 2")
 plt.title('Data Points with Iteration Colorbar and Pareto Front')
 
 # Setting the axis limits to start from zero
