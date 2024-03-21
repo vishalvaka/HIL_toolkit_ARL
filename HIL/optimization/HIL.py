@@ -30,8 +30,10 @@ class HIL:
         
         if self.args["Optimization"]["MultiObjective"] == 1:
             self.MULTI_OBJECTIVE = True
+            self.SAMPLES = self.args["Multi_Objective_Cost"]["Cost1"]["n_samples"]
         else:
             self.MULTI_OBJECTIVE = False
+            self.SAMPLES = self.args["Cost"]["n_samples"]
 
 
         # start the
@@ -57,7 +59,6 @@ class HIL:
         # The ones which are done.
         self.x_opt = np.array([])
         self.y_opt = np.array([])
-
 
     def _normalize_x(self, x: np.ndarray) -> np.ndarray:
         """Normalize x based on the range of the parameter
@@ -164,7 +165,8 @@ class HIL:
                 n_parms=args["n_parms"],
                 range=np.array(np.array(list(args["range"])) if not args["normalize"] else [[0.0], [1.0]]),
                 model_save_path=args["model_save_path"],
-                acq = args["acquisition"]
+                acq = args["acquisition"],
+                Kernel=args["kernel_function"]
             )
 
     def _start_cost(self, args: dict) -> None:
@@ -225,10 +227,10 @@ class HIL:
                         print('time diff ', self.cost_time - self.start_time)
                         # Calculate the mean cost
                         # Extract the last 5 elements for each objective
-                        last_5_elements = [obj[-5:] for obj in self.store_cost_data]
+                        last_n_elements = [obj[-self.SAMPLES:] for obj in self.store_cost_data]
     
                         # Calculate the mean for each objective
-                        mean_costs = [np.mean(obj) for obj in last_5_elements] # mean_costs = [__, __]
+                        mean_costs = [np.mean(obj) for obj in last_n_elements] # mean_costs = [__, __]
     
                         print(f" cost is {mean_costs}")
                         # add reset time function 
@@ -249,10 +251,10 @@ class HIL:
                                 )
                             
                             # Extract the last 5 elements for each objective
-                            last_5_elements = [obj[-5:] for obj in self.store_cost_data]
+                            last_n_elements = [obj[-self.SAMPLES:] for obj in self.store_cost_data]
     
                             # Calculate the mean cost for each objective
-                            mean_costs = [np.mean(obj) for obj in last_5_elements]
+                            mean_costs = [np.mean(obj) for obj in last_n_elements]
     
                             if len(self.y_opt) < 1:
                                 self.y_opt = np.array([mean_costs])
@@ -284,10 +286,10 @@ class HIL:
                 ):
     
                     # Extract the last 5 elements for each objective
-                    last_5_elements = [obj[-5:] for obj in self.store_cost_data]
+                    last_n_elements = [obj[-self.SAMPLES:] for obj in self.store_cost_data]
     
                     # Calculate the mean cost for each objective
-                    mean_costs = [np.mean(obj) for obj in last_5_elements]
+                    mean_costs = [np.mean(obj) for obj in last_n_elements]
                     
                     print(f" cost is {mean_costs}")
                     
@@ -351,10 +353,10 @@ class HIL:
                             )
                             
                             # Extract the last 5 elements for each objective
-                            last_5_elements = [obj[-5:] for obj in self.store_cost_data]
+                            last_n_elements = [obj[-self.SAMPLES:] for obj in self.store_cost_data]
     
                             # Calculate the mean cost for each objective
-                            mean_costs = [np.mean(obj) for obj in last_5_elements]
+                            mean_costs = [np.mean(obj) for obj in last_n_elements]
                             
                             self.y_opt = np.concatenate((self.y_opt, np.array([mean_costs])))
                             self.n += 1
@@ -426,8 +428,8 @@ class HIL:
                         "time"
                     ] and len(
                         self.store_cost_data
-                    ) > 5:  # 30 for 120
-                        print(f" cost is {np.mean(self.store_cost_data[-5:])}")
+                    ) > self.SAMPLES:  # 30 for 120
+                        print(f" cost is {np.mean(self.store_cost_data[-self.SAMPLES:])}")
                         out = input("Press Y to record the data: N to remove it:")
                         print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
                         if out == "N":
@@ -442,7 +444,7 @@ class HIL:
                                 self.x_opt = np.concatenate(
                                     (self.x_opt, np.array([self.x[self.n]]))
                                 )
-                            mean_cost = np.mean(self.store_cost_data[-5:])
+                            mean_cost = np.mean(self.store_cost_data[-self.SAMPLES:])
     
                             if len(self.y_opt) < 1:
                                 self.y_opt = np.array([mean_cost])
@@ -470,7 +472,7 @@ class HIL:
                     self.n == self.args["Optimization"]["n_exploration"]
                     and not self.OPTIMIZATION
                 ):
-                    print(f" cost is {np.mean(self.store_cost_data[-5:])}")
+                    print(f" cost is {np.mean(self.store_cost_data[-self.SAMPLES:])}")
                     out = input("Press Y to record the data: N to remove it:")
                     print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
                     if out == "N":
@@ -513,7 +515,11 @@ class HIL:
                     print(f"In the optimization loop {self.n}, parameter {self.x[self.n]}")
                     self._get_cost()
                     self.outlet.push_sample(self.x[self.n,:].tolist() + [0])
-                    if (self.cost_time - self.start_time) > self.args["Cost"]["time"]:
+                    if (self.cost_time - self.start_time) > self.args["Cost"][
+                        "time"
+                    ] and len(
+                        self.store_cost_data
+                    ) > self.SAMPLES:
                         out = input("Press Y to record the data: N to remove it:")
                         print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
                         if out == "N":
@@ -525,7 +531,7 @@ class HIL:
                             self.x_opt = np.concatenate(
                                 (self.x_opt, np.array([self.x[self.n]]))
                             )
-                            mean_cost = np.mean(self.store_cost_data[-5:])
+                            mean_cost = np.mean(self.store_cost_data[-self.SAMPLES:])
                             self.y_opt = np.concatenate((self.y_opt, np.array([mean_cost])))
                             self.n += 1
                             print(
