@@ -2,19 +2,28 @@ from HIL.optimization.BO import BayesianOptimization
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+import pandas as pd
 
-BO = BayesianOptimization(range = np.array([90,130]), noise_range=np.array([0, 1]), plot=False) # Change the range depending on whether the parameter range is normalized or not
+# 90, 130
+BO = BayesianOptimization(range = np.array([90,130]), noise_range=np.array([0.005, 5]), plot=False) # Change the range depending on whether the parameter range is normalized or not
 length_scale = []
 variance = []
 noise_data = []
 
+
+# Load data
+
+# data = pd.read_excel('models\test\Feb_29_ETC.xlsx') 
 # Fit GP for entire dataset
-#data = np.loadtxt(r'models\iter_12\data.csv')
-data = np.loadtxt(r'models\test\SFopt_ETC_diff.csv')
+data = np.loadtxt(r'models\iter_15\data.csv')
+#data = np.loadtxt(r'models\test\Mar_5_ETC.csv')
 # split the data to x and y
 data = data.reshape(-1, 2)
 x = data[:, 0].reshape(-1, 1)
 y = data[:, 1].reshape(-1, 1)
+#y = (y-np.mean(y))/(np.std(y))
+print(type(x))
+
 BO.COMMS = False
 new_parameter = BO.run(x, y)
 
@@ -55,11 +64,11 @@ with torch.no_grad():
 x_new=x
 y_new=y
 
-max_val = max(observed_mean)
-index = np.where(observed_mean == max_val)[0]
-opt_param = x[index]
+# max_val = max(observed_mean)
+# index = np.where(observed_mean == max_val)[0]
+# opt_param = x_length[index]
 
-print("The optimal parameter is", opt_param)
+# print("The optimal parameter is", opt_param)
 
 # Plot the GP
 plt.figure(figsize=(8, 6))
@@ -67,11 +76,12 @@ plt.plot(x_length, observed_mean, label='mean', linewidth=3, color='b')
 plt.scatter(x_new, y_new, label='Points', color='r', marker='o', s=50)
 plt.fill_between(x_length.squeeze(), lower.squeeze(), upper.squeeze(), alpha=0.3)
 plt.xlim(BO.range[0], BO.range[1])
-plt.xticks(np.arange(BO.range[0], BO.range[1], 0.2), fontsize=13)
+# plt.xticks(np.arange(BO.range[0], BO.range[1], 0.2), fontsize=13)
 plt.yticks(fontsize=14)
 plt.ylim(y_new.min()-1, y_new.max()+1)
-plt.xlabel('Parameter', fontsize=14)
-plt.ylabel('ETC', fontsize=14)
+plt.xlabel('Step frequency', fontsize=14)
+plt.ylabel('Metabolic cost (W)', fontsize=14)
+# plt.axvline(x = 97, color = 'g', label = 'preferred step frequency')
 plt.legend()
 plt.show()
 
