@@ -83,7 +83,7 @@ from botorch.models.converter import batched_to_model_list, model_list_to_batche
 # Load x and y
 # os.chdir(r"./models/iter_15")
 # Import the x and y data
-df_xy = pd.read_csv("models/iter_14/data.csv", delim_whitespace=True)
+df_xy = pd.read_csv("models/test/Feb_29_full_data.csv", delim_whitespace=True)
 # df_xy = pd.read_csv("./function_data.csv")
 
 # Extract the 'x' column and convert to a 1D Numpy array
@@ -112,12 +112,25 @@ print("Shape of y", y.shape)
 
 # Convert x and y numpy arrays to PyTorch tensors
 x_tensor = torch.tensor(x, dtype=torch.float32)
-x_tensor = x_tensor.view(x_tensor.shape[0], 1)
+mean = x_tensor.mean()
+std_dev = x_tensor.std()
+
+x_normalized = (x_tensor - mean) / std_dev
+
+x_normalized = x_normalized.view(x_normalized.shape[0], 1)
 y_tensor = torch.tensor(y, dtype=torch.float32)
+y_normalized = torch.empty_like(y_tensor)
 print(x_tensor)
 print(y_tensor)
 print("Shape of x tensor", x_tensor.shape)
 print("Shape of y tensor", y_tensor.shape)
+
+for i in range(y_tensor.shape[1]):
+    mean = y_tensor[:, i].mean()
+    std_dev = y_tensor[:, i].std()
+    y_normalized[:, i] = (y_tensor[:, i] - mean) / std_dev
+
+print(y_tensor)
 # Following the same procedure as in the MOBO.py code
 
 # # function to initialize GP models
@@ -146,9 +159,10 @@ print("Shape of y tensor", y_tensor.shape)
 # Define the kernel and Likelihood
 kernel = SE(1) # argument n_parms = 1
 covar_module = kernel.get_covr_module()
-noise_range = np.array([0, 0.4])
+noise_range = np.array([0.0, 10.0])
 _noise_constraints = noise_range 
 likelihood = GaussianLikelihood(noise_constraint = Interval(_noise_constraints[0], _noise_constraints[1]))
+# std_dev = y_tensor.std(dim = 1, unbiased=True)
 
 
 # Train the models and tune the hyperparameters (using Adam optimizer)
@@ -164,7 +178,10 @@ def _training_multi_objective(train_x, train_y):
     models = []
     for i in range(num_objectives):
         # Create a SingleTaskGP for each objective
+        # likelihood = GaussianLikelihood(noise_constraint = Interval((std_dev[i] / 10) ** 2, (2 * std_dev[i]) ** 2))
+        # likelihood = GaussianLikelihood(noise_constraint = Interval(0.0, train_y[:, i].max()*0.2))
         single_objective_model = SingleTaskGP(train_x, train_y[:, i].unsqueeze(-1), likelihood = likelihood, covar_module = covar_module) 
+        # single_objective_model = SingleTaskGP(train_x, train_y[:, i].unsqueeze(-1), covar_module = covar_module) 
         models.append(single_objective_model)
 
     # Create a ModelListGP to manage multiple objectives
@@ -220,7 +237,7 @@ def _initialize_and_train_models(x_tensor, y_tensor):
     
     for i in range(num_objectives):
         # Instantiate a Gaussian likelihood with noise constraints
-        noise_range = np.array([0, 0.4])  # Example noise range
+        noise_range = np.array([0, 0.001])  # Example noise range
         likelihood = GaussianLikelihood(noise_constraint=Interval(*noise_range))
         likelihoods.append(likelihood)
         
@@ -242,8 +259,8 @@ def _initialize_and_train_models(x_tensor, y_tensor):
     return model_list
 
 # Call the _training_multi_objective method,  also optimizes the hyperparameters and fits the model
-trained_model_list = _training_multi_objective(x_tensor, y_tensor) #use this if you dont want to use fit_gpytorch_model()
-# trained_model_list = _initialize_and_train_models(x_tensor, y_tensor) #use this if you want to use fit_gpytorch_model()
+trained_model_list = _training_multi_objective(x_normalized, y_normalized) #use this if you dont want to use fit_gpytorch_model()
+# trained_model_list = _initialize_and_train_models(x_normalized, y_normalized) #use this if you want to use fit_gpytorch_model()
 
 # Generate test points for plotting in the range [0, 1]
 test_x = torch.linspace(x_tensor.min(), x_tensor.max(), 100).unsqueeze(-1)
@@ -286,10 +303,10 @@ for i in range(len(observed_mean)):
     plt.plot(test_x, observed_mean[i], label='mean', linewidth=3, color='b')
     plt.scatter(x, y[:,i], label='Points', color='r', marker='o', s=50)
     plt.fill_between(test_x.squeeze(), lower[i].squeeze(), upper[i].squeeze(), alpha=0.3)
-    plt.xlim(x_tensor.min(), x_tensor.max()) # Normalized parameter range
+    # plt.xlim(x_tensor.min(), x_tensor.max()) # Normalized parameter range
     # plt.xticks(np.arange(0, 1, 0.2), fontsize=13)
-    plt.yticks(fontsize=14)
-    plt.ylim(y[:,i].min()-1, y[:,i].max()+1)
+    # plt.yticks(fontsize=14)
+    # plt.ylim(y[:,i].min()-1, y[:,i].max()+1)
     plt.xlabel('Normalized parameter', fontsize=14)
     # plt.ylabel('Normalized ECG-RMSSD cost', fontsize=14)
     # plt.ylabel('Normalized ' + df_xy.columns.to_list()[i+1] + ' cost', fontsize=14)
