@@ -83,7 +83,7 @@ from botorch.models.converter import batched_to_model_list, model_list_to_batche
 # Load x and y
 # os.chdir(r"./models/iter_15")
 # Import the x and y data
-df_xy = pd.read_csv("./models/iter_15/data.csv", delim_whitespace=True)
+df_xy = pd.read_csv("models/iter_14/data.csv", delim_whitespace=True)
 # df_xy = pd.read_csv("./function_data.csv")
 
 # Extract the 'x' column and convert to a 1D Numpy array
@@ -98,6 +98,7 @@ x = df_xy.iloc[:, 0].values
 
 # # Extract the second and third columns as a vector of two objectives (y1 and y2), and convert to a 2D Numpy array
 y = df_xy.iloc[:, 1:].values
+
 
 # # Print the extracted data
 print("x:")
@@ -212,11 +213,40 @@ def _training_multi_objective(train_x, train_y):
 
     return model_list
 
+def _initialize_and_train_models(x_tensor, y_tensor):
+    num_objectives = y_tensor.shape[1]
+    models = []
+    likelihoods = []
+    
+    for i in range(num_objectives):
+        # Instantiate a Gaussian likelihood with noise constraints
+        noise_range = np.array([0, 0.4])  # Example noise range
+        likelihood = GaussianLikelihood(noise_constraint=Interval(*noise_range))
+        likelihoods.append(likelihood)
+        
+        # Define the model for each objective
+        model = SingleTaskGP(x_tensor, y_tensor[:, i].unsqueeze(-1), likelihood=likelihood)
+        models.append(model)
+    
+    # Train each model
+    for model, likelihood in zip(models, likelihoods):
+        # The Marginal Log Likelihood (MLL) is the objective function to be maximized.
+        mll = ExactMarginalLogLikelihood(likelihood, model)
+        
+        # This step optimizes the MLL using the default optimizer (L-BFGS by default).
+        fit_gpytorch_model(mll)
+        
+    # Combine the trained models into a ModelListGP
+    model_list = ModelListGP(*models)
+    
+    return model_list
+
 # Call the _training_multi_objective method,  also optimizes the hyperparameters and fits the model
-trained_model_list = _training_multi_objective(x_tensor, y_tensor)
+trained_model_list = _training_multi_objective(x_tensor, y_tensor) #use this if you dont want to use fit_gpytorch_model()
+# trained_model_list = _initialize_and_train_models(x_tensor, y_tensor) #use this if you want to use fit_gpytorch_model()
 
 # Generate test points for plotting in the range [0, 1]
-test_x = torch.linspace(0, 1, 100).unsqueeze(-1)
+test_x = torch.linspace(x_tensor.min(), x_tensor.max(), 100).unsqueeze(-1)
 
 # Make predictions for the test points
 # Iterate over models and get the posterior predictive distribution for the test points
@@ -256,15 +286,16 @@ for i in range(len(observed_mean)):
     plt.plot(test_x, observed_mean[i], label='mean', linewidth=3, color='b')
     plt.scatter(x, y[:,i], label='Points', color='r', marker='o', s=50)
     plt.fill_between(test_x.squeeze(), lower[i].squeeze(), upper[i].squeeze(), alpha=0.3)
-    plt.xlim(0, 1) # Normalized parameter range
-    plt.xticks(np.arange(0, 1, 0.2), fontsize=13)
+    plt.xlim(x_tensor.min(), x_tensor.max()) # Normalized parameter range
+    # plt.xticks(np.arange(0, 1, 0.2), fontsize=13)
     plt.yticks(fontsize=14)
     plt.ylim(y[:,i].min()-1, y[:,i].max()+1)
     plt.xlabel('Normalized parameter', fontsize=14)
     # plt.ylabel('Normalized ECG-RMSSD cost', fontsize=14)
-    plt.ylabel('Normalized ' + df_xy.columns.to_list()[i+1] + ' cost', fontsize=14)
-    # plt.show()
-    plt.savefig('GP ' + str(i) + '.png')
+    # plt.ylabel('Normalized ' + df_xy.columns.to_list()[i+1] + ' cost', fontsize=14)
+    plt.ylabel('Normalized ' + ' cost', fontsize=14)
+    plt.show()
+    # plt.savefig('GP ' + str(i) + '.png')
 
 # # Plot the GP for the second objective 
 # plt.figure(figsize=(8, 6))
