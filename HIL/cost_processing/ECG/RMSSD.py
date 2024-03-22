@@ -112,6 +112,7 @@ class RMSSDInOut(InletOutlet):
         #     self.first_data = True
         #     return
 
+        rmssd = - rmssd # Multiplying by -1 because we want to maximize RMSSD
         self.outlet.push_sample([rmssd])
 
         self.new_data = True

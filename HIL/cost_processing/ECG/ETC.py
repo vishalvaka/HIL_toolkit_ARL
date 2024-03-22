@@ -112,7 +112,7 @@ class ETCInOut(InletOutlet):
         #     self.store_data = np.array([])
         #     self.first_data = True
         #     return
-
+        etc = -etc # multiplying by -1 because we want to maximize ETC 
         self.outlet.push_sample([etc])
 
         self.new_data = True
