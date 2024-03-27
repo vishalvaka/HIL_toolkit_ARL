@@ -568,15 +568,28 @@ class HIL:
             
 
     def _generate_initial_parameters(self) -> None:
-        opt_args = self.args["Optimization"]
-        range_ = np.array(list(opt_args["range"]))
-        # generate the initial parameters in the range of the parameter and in the shape of exploration x shape
-        self.x = np.random.uniform(
-            range_[0], range_[1], size=(opt_args["n_exploration"], opt_args["n_parms"])
-        )
+        # opt_args = self.args["Optimization"]
+        # range_ = np.array(list(opt_args["range"]))
+        # # generate the initial parameters in the range of the parameter and in the shape of exploration x shape
+        # self.x = np.random.uniform(
+        #     range_[0], range_[1], size=(opt_args["n_exploration"], opt_args["n_parms"])
+        # )
         # self.x[0]=35.0
         # self.x[1]=75.0
-        # self.x[2]=10.0
+        # self.x[2]=10.0\
+        n_expl = self.args["Optimization"]["n_exploration"]
+        range_arr = self.args["Optimization"]["range"]
+        # steps = []
+        # for i in range(len(range_arr[0])):
+        #     steps.append((range_arr[1][i] - range_arr[0][i]) / (n_expl - 1))
+
+        steps = [(range[1] - range[0]) / (n_expl - 1) for range in np.array(range_arr).T]
+        print('steps', steps)
+        self.x = [[range_arr[0][0]]]
+        for i in range(1, n_expl):
+            self.x.append([range[0] + i * step for step, range in zip(steps, np.array(range_arr).T)])
+        self.x = np.array(self.x)
+        np.random.shuffle(self.x)
         print(f"###### start functions are {self.x} ######")
 
     def _get_cost(self) -> None:
