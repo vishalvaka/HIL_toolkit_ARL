@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # 90, 130
-BO = BayesianOptimization(range = np.array([90,130]), noise_range=np.array([0.005, 5]), plot=False) # Change the range depending on whether the parameter range is normalized or not
+BO = BayesianOptimization(range = np.array([90,130]), noise_range=np.array([0.005, 2]), plot=False) # Change the range depending on whether the parameter range is normalized or not
 length_scale = []
 variance = []
 noise_data = []
@@ -71,21 +71,28 @@ y_new=y
 # print("The optimal parameter is", opt_param)
 
 # Plot the GP
-plt.figure(figsize=(8, 6))
-plt.plot(x_length, observed_mean, label='mean', linewidth=3, color='b')
-plt.scatter(x_new, y_new, label='Points', color='r', marker='o', s=50)
-plt.fill_between(x_length.squeeze(), lower.squeeze(), upper.squeeze(), alpha=0.3)
-plt.xlim(BO.range[0], BO.range[1])
-# plt.xticks(np.arange(BO.range[0], BO.range[1], 0.2), fontsize=13)
-plt.yticks(fontsize=14)
-plt.ylim(y_new.min()-1, y_new.max()+1)
-plt.xlabel('Step frequency', fontsize=14)
-plt.ylabel('Metabolic cost (W)', fontsize=14)
-# plt.axvline(x = 97, color = 'g', label = 'preferred step frequency')
-plt.legend()
-plt.show()
+# plt.figure(figsize=(8, 6))
+# plt.plot(x_length, observed_mean, label='mean', linewidth=3, color='b')
+# plt.scatter(x_new, y_new, label='Points', color='r', marker='o', s=50)
+# plt.fill_between(x_length.squeeze(), lower.squeeze(), upper.squeeze(), alpha=0.3)
+# plt.xlim(BO.range[0], BO.range[1])
+# # plt.xticks(np.arange(BO.range[0], BO.range[1], 0.2), fontsize=13)
+# plt.yticks(fontsize=14)
+# plt.ylim(y_new.min()-1, y_new.max()+1)
+# plt.xlabel('Step frequency', fontsize=14)
+# plt.ylabel('ETC', fontsize=14)
+# # plt.axvline(x = 97, color = 'g', label = 'preferred step frequency')
+# plt.legend()
+# plt.show()
 
-# # Plot the stiffness param vs. iteration
+# index_max = np.argmax(observed_mean)
+
+# # Use the index to find the corresponding x value
+# x_max = x_length[index_max]
+
+# print("The x value at which the observed mean is maximized:", x_max)
+
+# # # Plot the stiffness param vs. iteration
 # plt.figure(figsize=(8, 6))
 # plt.plot(np.arange(3, 8), x_new, linewidth=3, color='b')
 # plt.scatter(np.arange(3, 8), x_new, linewidth=3, color='b')
@@ -117,3 +124,33 @@ plt.show()
 #     plt.fill_between(x_length.flatten(), lower.cpu().numpy(), upper.cpu().numpy(), alpha=0.2)
 #     plt.legend(['Observed Data', 'mean', 'Confidence'])
 #     plt.pause(0.01)
+
+plt.figure(figsize=(8, 6))
+plt.plot(x_length, observed_mean, label='mean', linewidth=3, color='b')
+plt.scatter(x_new, y_new, label='Points', color='r', marker='o', s=50)
+plt.fill_between(x_length.squeeze(), lower.squeeze(), upper.squeeze(), alpha=0.3)
+
+# Find the index of the maximum value in observed_mean
+index_max = np.argmax(observed_mean)
+# Use the index to find the corresponding x value
+x_max = x_length[index_max]
+# Plot the maximum observed mean point as a star
+plt.plot(x_max, observed_mean[index_max], 'y*', markersize=15, label='Max Mean')
+
+plt.xlim(BO.range[0], BO.range[1])
+plt.yticks(fontsize=14)
+plt.ylim(y_new.min()-1, y_new.max()+1)
+plt.xlabel('Step frequency', fontsize=14)
+plt.ylabel('ETC', fontsize=14)
+
+# Annotate the plot with the x value at the maximum observed mean
+plt.annotate(f'{x_max[0]:.2f}', # text
+             (x_max, observed_mean[index_max]), # point to annotate
+             textcoords="offset points", # how to position the text
+             xytext=(0,10), # distance from text to points (x,y)
+             ha='center', # horizontal alignment can be left, right or center
+             fontsize=12, 
+             color='blue')
+
+plt.legend()
+plt.show()
