@@ -589,6 +589,7 @@ class HIL:
         for i in range(1, n_expl):
             self.x.append([range[0] + i * step for step, range in zip(steps, np.array(range_arr).T)])
         self.x = np.array(self.x)
+        np.random.shuffle(self.x)
         print(f"###### start functions are {self.x} ######")
 
     def _get_cost(self) -> None:
