@@ -15,14 +15,24 @@ noise_data = []
 
 # data = pd.read_excel('models\test\Feb_29_ETC.xlsx') 
 # Fit GP for entire dataset
-data = np.loadtxt(r'models\iter_15\data.csv')
-#data = np.loadtxt(r'models\test\Mar_5_ETC.csv')
-# split the data to x and y
-data = data.reshape(-1, 2)
-x = data[:, 0].reshape(-1, 1)
-y = data[:, 1].reshape(-1, 1)
+df_xy = pd.read_csv("models/test/Feb_29_ETC.csv", delim_whitespace=True)
+# df_xy = pd.read_csv("./function_data.csv")
+
+# Extract the 'x' column and convert to a 1D Numpy array
+# x = df_xy['x_normalized'].values
+
+# Since the provided CSV file only contains 2 columns ('x' and 'y'),
+# and based on your description, if you expect to extract 'y' as a separate column:
+# y = df_xy['y_normalized'].values.reshape(-1, 1) 
+
+# Extract the first column as x and convert to a 1D Numpy array
+x = df_xy.iloc[:, 0].values
+
+# # Extract the second and third columns as a vector of two objectives (y1 and y2), and convert to a 2D Numpy array
+y = torch.tensor(df_xy.iloc[:, 1:].values, dtype = torch.float64)
 #y = (y-np.mean(y))/(np.std(y))
-print(type(x))
+print(y.shape)
+x = x.reshape(-1, 1)
 
 BO.COMMS = False
 new_parameter = BO.run(x, y)

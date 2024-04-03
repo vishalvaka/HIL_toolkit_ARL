@@ -115,20 +115,20 @@ x_tensor = torch.tensor(x, dtype=torch.float32)
 mean = x_tensor.mean()
 std_dev = x_tensor.std()
 
-x_normalized = (x_tensor - mean) / std_dev
+# x_normalized = (x_tensor - mean) / std_dev
 
-x_normalized = x_normalized.view(x_normalized.shape[0], 1)
+x_tensor = x_tensor.view(x_tensor.shape[0], 1)
 y_tensor = torch.tensor(y, dtype=torch.float32)
-y_normalized = torch.empty_like(y_tensor)
+# y_normalized = torch.empty_like(y_tensor)
 print(x_tensor)
 print(y_tensor)
 print("Shape of x tensor", x_tensor.shape)
 print("Shape of y tensor", y_tensor.shape)
 
-for i in range(y_tensor.shape[1]):
-    mean = y_tensor[:, i].mean()
-    std_dev = y_tensor[:, i].std()
-    y_normalized[:, i] = (y_tensor[:, i] - mean) / std_dev
+# for i in range(y_tensor.shape[1]):
+#     mean = y_tensor[:, i].mean()
+#     std_dev = y_tensor[:, i].std()
+#     y_normalized[:, i] = (y_tensor[:, i] - mean) / std_dev
 
 print(y_tensor)
 # Following the same procedure as in the MOBO.py code
@@ -159,10 +159,11 @@ print(y_tensor)
 # Define the kernel and Likelihood
 kernel = SE(1) # argument n_parms = 1
 covar_module = kernel.get_covr_module()
-noise_range = np.array([0.0, 10.0])
-_noise_constraints = noise_range 
-likelihood = GaussianLikelihood(noise_constraint = Interval(_noise_constraints[0], _noise_constraints[1]))
-# std_dev = y_tensor.std(dim = 1, unbiased=True)
+# noise_range = np.array([0.0, 1.0])
+# _noise_constraints = noise_range 
+# likelihood = GaussianLikelihood(noise_constraint = Interval(_noise_constraints[0], _noise_constraints[1]))
+# std_dev = y_tensor.std(dim = 0, unbiased=True)
+# print('std_dev', std_dev)
 
 
 # Train the models and tune the hyperparameters (using Adam optimizer)
@@ -173,12 +174,14 @@ def _training_multi_objective(train_x, train_y):
     """
     num_objectives = train_y.shape[-1]
     print('@@'+str(num_objectives))
+    print('train_y[:, i].unsqueeze(-1)', train_y[:, 0])
 
     # Initialize a list to store individual GP models for each objective
     models = []
     for i in range(num_objectives):
+        noise_range = [input('enter noise range 0:'), input('enter noise range 1:')]
         # Create a SingleTaskGP for each objective
-        # likelihood = GaussianLikelihood(noise_constraint = Interval((std_dev[i] / 10) ** 2, (2 * std_dev[i]) ** 2))
+        likelihood = GaussianLikelihood(noise_constraint = Interval(float(noise_range[0]), float(noise_range[1])))
         # likelihood = GaussianLikelihood(noise_constraint = Interval(0.0, train_y[:, i].max()*0.2))
         single_objective_model = SingleTaskGP(train_x, train_y[:, i].unsqueeze(-1), likelihood = likelihood, covar_module = covar_module) 
         # single_objective_model = SingleTaskGP(train_x, train_y[:, i].unsqueeze(-1), covar_module = covar_module) 
@@ -259,7 +262,7 @@ def _initialize_and_train_models(x_tensor, y_tensor):
     return model_list
 
 # Call the _training_multi_objective method,  also optimizes the hyperparameters and fits the model
-trained_model_list = _training_multi_objective(x_normalized, y_normalized) #use this if you dont want to use fit_gpytorch_model()
+trained_model_list = _training_multi_objective(x_tensor, y_tensor) #use this if you dont want to use fit_gpytorch_model()
 # trained_model_list = _initialize_and_train_models(x_normalized, y_normalized) #use this if you want to use fit_gpytorch_model()
 
 # Generate test points for plotting in the range [0, 1]
@@ -297,11 +300,29 @@ with torch.no_grad():
         lower.append(lower_i)
         upper.append(upper_i)
 
+# Calculate the new y values based on the provided operation
+y_new = np.array([0.5 * observed_mean[0] + 0.5 * (-observed_mean[1])]).T
+
+# Find the x value at which y_new is maximized
+max_index = np.argmax(y_new)
+max_x = test_x.numpy()[max_index]
+max_y_new = y_new[max_index]
+
+# Plot
+plt.figure()
+plt.plot(test_x.numpy(), y_new, label='y_new')
+# Plot the point at which y_new is maximized as a star and annotate it
+plt.scatter(max_x, max_y_new, color='red', marker='*', s=200, label='Maximum of y_new')
+plt.annotate(f"({max_x[0]:.2f}, {max_y_new[0]:.2f})", (max_x, max_y_new), textcoords="offset points", xytext=(-10,10), ha='center')
+
+plt.legend()
+plt.show()
+
 # Plot the GP for the first objective
 for i in range(len(observed_mean)):
     plt.figure(figsize=(8, 6))
     plt.plot(test_x, observed_mean[i], label='mean', linewidth=3, color='b')
-    plt.scatter(x, y[:,i], label='Points', color='r', marker='o', s=50)
+    plt.scatter(x_tensor, y_tensor[:,i], label='Points', color='r', marker='o', s=50)
     plt.fill_between(test_x.squeeze(), lower[i].squeeze(), upper[i].squeeze(), alpha=0.3)
     # plt.xlim(x_tensor.min(), x_tensor.max()) # Normalized parameter range
     # plt.xticks(np.arange(0, 1, 0.2), fontsize=13)
@@ -312,6 +333,7 @@ for i in range(len(observed_mean)):
     # plt.ylabel('Normalized ' + df_xy.columns.to_list()[i+1] + ' cost', fontsize=14)
     plt.ylabel('Normalized ' + ' cost', fontsize=14)
     plt.show()
+
     # plt.savefig('GP ' + str(i) + '.png')
 
 # # Plot the GP for the second objective 

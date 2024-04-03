@@ -5,7 +5,7 @@ from botorch.utils.multi_objective.pareto import is_non_dominated
 import numpy as np
 import torch
 from scripts.test_cost_function import f
-
+import pandas as pd
 
 # def is_non_dominated_simple(scores):
 #     is_pareto = np.ones(scores.shape[0], dtype=bool)
@@ -18,18 +18,20 @@ from scripts.test_cost_function import f
 
 
 args = yaml.safe_load(open('configs/test_function.yml','r'))
-filename = 'models/iter_' + str(args['Optimization']['n_steps']) + '/data.csv'
-
+# filename = 'models/iter_' + str(args['Optimization']['n_steps']) + '/data.csv'
+filename = 'models/test/Feb_29_full_data.csv'
 # Load the data from the CSV file
-data = np.loadtxt(filename, delimiter=' ')
-data[:, 1] = -data[:, 1]
-data[:, 2] = -data[:, 2]
-data = data[np.argsort(data[:, 0])]
+# data = np.loadtxt(filename, delimiter=' ')
+data = pd.read_csv('models/test/Feb_29_full_data.csv', delim_whitespace=True)
+print(data)
+# data[:, 1] = -data[:, 1]
+# data[:, 2] = -data[:, 2]
+# data = data[np.argsort(data[:, 0])]
 # print(data)
 # Splitting the data into X, Y1, and Y2
-x = data[:, 0]
-y1 = data[:, 1]
-y2 = data[:, 2]
+x = data.iloc[:, 0].values
+y1 = data.iloc[:, 1].values
+y2 = data.iloc[:, 2].values
 
 x = np.array(x)
 # x_norm = (x - x.min()) / (x.max() - x.min(    ))
@@ -38,12 +40,12 @@ x = np.array(x)
 bounds = torch.tensor(args["Optimization"]["range"])
 xs = np.linspace(bounds[0][0], bounds[1][0], 1000)
 xs = xs.reshape((1000, -1))
-ys_true = f(xs, noise_level=0).numpy()
+# ys_true = f(xs, noise_level=0).numpy()
 
-# # Plotting
-# plt.figure(figsize=(12, 6))
+# # # Plotting
+# # plt.figure(figsize=(12, 6))
 
-plt.plot(xs, ys_true, label=["F1", "F2"])
+# plt.plot(xs, ys_true, label=["F1", "F2"])
 # the fill method constructs a polygon of the specified color delimited by all the point
 # in the xs and ys arrays.
 # plt.fill(np.concatenate([xs, xs[::-1]]),

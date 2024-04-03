@@ -66,6 +66,7 @@ class MultiObjectiveBayesianOptimization(object):
             for _ in range(n_candidates):
                 
                 weights = sample_simplex(2).squeeze()
+                # weights = torch.tensor([0.5, 0.5]) #use this if you want equal importance for both objectives
                 objective = GenericMCObjective(
                     get_chebyshev_scalarization(
                         weights,
@@ -223,7 +224,7 @@ class MultiObjectiveBayesianOptimization(object):
         """
         save_iter_path = "models/" + f'iter_{len(self.x)}'
         os.makedirs(save_iter_path, exist_ok=True)
-        model_path = save_iter_path +'/model.pth'
+        model_path = save_iter_path +'/multi_model.pth'
         torch.save(self.model.state_dict(), model_path) #type: ignore
         data_save = save_iter_path + '/data.csv'
         x = self.x.detach().cpu().numpy()
