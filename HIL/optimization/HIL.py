@@ -242,6 +242,7 @@ class HIL:
                             print("#########################")
                             print("########### recollecting #######")
                             print("#########################")
+                            self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
                         else:
                             if len(self.x_opt) < 1:
                                 self.x_opt = np.array([self.x[self.n]])
@@ -300,6 +301,7 @@ class HIL:
                         print("################################")
                         print("########### recollecting #######")
                         print("################################")
+                        self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
                     else:
                         print(f"starting the optimization.")
                         if self.NORMALIZATION:
@@ -347,6 +349,7 @@ class HIL:
                             print("################################")
                             print("########### recollecting #######")
                             print("################################")
+                            self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
                         else:
                             self.x_opt = np.concatenate(
                                 (self.x_opt, np.array([self.x[self.n]]))
@@ -437,6 +440,7 @@ class HIL:
                             print("#########################")
                             print("########### recollecting #######")
                             print("#########################")
+                            self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
                         else:
                             if len(self.x_opt) < 1:
                                 self.x_opt = np.array([self.x[self.n]])
@@ -480,6 +484,7 @@ class HIL:
                         print("################################")
                         print("########### recollecting #######")
                         print("################################")
+                        self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
                     else:
                         print(f"starting the optimization.")
                         if self.NORMALIZATION:
@@ -527,6 +532,7 @@ class HIL:
                             print("################################")
                             print("########### recollecting #######")
                             print("################################")
+                            self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
                         else:
                             self.x_opt = np.concatenate(
                                 (self.x_opt, np.array([self.x[self.n]]))
@@ -589,6 +595,7 @@ class HIL:
         for i in range(1, n_expl):
             self.x.append([range[0] + i * step for step, range in zip(steps, np.array(range_arr).T)])
         self.x = np.array(self.x)
+        # np.random.seed(time.time())
         np.random.shuffle(self.x)
         print(f"###### start functions are {self.x} ######")
 

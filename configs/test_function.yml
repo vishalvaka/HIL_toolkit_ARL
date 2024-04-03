@@ -2,13 +2,13 @@
 Cost:
   Name: "test_function" # name of the cost function stream
   time: 1 # time of the cost function stream.
-  n_samples: 5
+  n_samples: 1
   avg_time: 5 # average time of the cost function stream.
   mean_time: 5 # mean time of the cost function.
 
 Optimization:
   n_parms: 1 # number of parametes
-  n_steps: 20 # number of steps
+  n_steps: 10 # number of steps
   n_exploration: 3 # number of exploration steps
   range: [[-1.2], [1.2]] # range of the parameters
   model_save_path: "models/"
@@ -18,7 +18,7 @@ Optimization:
   kernel_function: 'se'
   GP: "Regular"
   normalize: False
-  MultiObjective: 1            
+  MultiObjective: 0         
 
 Multi_Objective_Cost:
   Cost1:
