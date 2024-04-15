@@ -100,9 +100,10 @@ class SymmetryIndexInOut(InletOutlet):
 
         """
         symmetryIndex = self.symmetryIndex.get_symmetryindex()
+        print('symmetry Index: ',symmetryIndex)
 
-        if self.previous_HR == 1000: # this is the first
-            self.previous_HR = symmetryIndex
+        # if self.previous_HR == 1000: # this is the first
+        #     self.previous_HR = symmetryIndex
 
         # if len(self.cleaned) < 2000: #type: ignore
         #     self._logger.info(f"Not enough clean data {len(self.cleaned)}") #type: ignore
@@ -119,12 +120,12 @@ class SymmetryIndexInOut(InletOutlet):
         #     self.first_data = True
         #     return
 
-        symmetryIndex = - symmetryIndex # Multiplying by -1 because we want to maximize RMSSD
+        # symmetryIndex = - symmetryIndex # Multiplying by -1 because we want to maximize RMSSD
         self.outlet.push_sample([symmetryIndex])
 
         self.new_data = True
 
-        self._logger.info(f"Sending the Syemmetry Index value {symmetryIndex}")
+        self._logger.info(f"Sending the Symmetry Index value {symmetryIndex}")
 
 class SymmetryIndex():
     def __init__(self, sampling_rate: int ) -> None:
@@ -168,15 +169,16 @@ class SymmetryIndex():
         """
 
         peaks, _ = scipy.signal.find_peaks(-self.raw_data, height=1250, distance=75) #modify height and distance attribute depending on the postion of subject
-        
+        print(f'peaks: {peaks}')
         intervals = np.diff(peaks)
 
         stride_times_left = np.array([(intervals[i] + intervals[i + 1])/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
         stride_times_right =  np.array([(intervals[i + 1] + intervals[i + 2])/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
         step_time_left = np.array([intervals[i]/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
         step_time_right = np.array([intervals[i + 1]/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
-                    
+        # print(f'step_time_left: {step_time_left}')            
         symmetry_index = abs((2 * (step_time_left - step_time_right) / (step_time_left + step_time_right)) * 100)
+        # print(f'symmetry Index in process_data function {symmetry_index}')
 
         return symmetry_index.mean()
     
