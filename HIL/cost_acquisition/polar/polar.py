@@ -155,6 +155,7 @@ class Polar(object):
 
         battery_level = await client.read_gatt_char(self.BATTERY_LEVEL_UUID)
         self.logger.info("Battery Level: {0}%".format(int(battery_level[0])))
+        print(f'battery level: {battery_level[0]}%')
 
         att_read = await client.read_gatt_char(self.PMD_CONTROL)
 
