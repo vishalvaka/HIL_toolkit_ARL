@@ -18,8 +18,8 @@ from typing import List
 
 from HIL.cost_processing.utils.inlet import InletOutlet
 
-
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 class SymmetryIndexInOut(InletOutlet):
     dtypes = [[], np.float32, np.float64, None, np.int32, np.int16, np.int8, np.int64]
@@ -134,8 +134,30 @@ class SymmetryIndex():
         Args:
             sampling_rate (int): Sampling rate of the data
         """
+        self.raw_data = np.array([])
+        self.peaks = np.array([])
         self.SAMPLING_RATE = sampling_rate
         self.cleaned = np.array([])
+        self.fig, self.ax = plt.subplots()
+        self.line, = self.ax.plot([], [], 'b-')  # Line for raw data
+        self.peaks_plot, = self.ax.plot([], [], 'r^')  # Peaks in the data
+
+    def update_plot(self, frame):
+        if not hasattr(self, 'inlets') or not self.inlets:
+            return self.line, self.peaks_plot
+        
+        # Assuming there's only one inlet for simplicity
+        inlet = self.inlets[0]
+        self.line.set_data(np.arange(len(inlet.symmetryIndex.raw_data)), inlet.symmetryIndex.raw_data)
+        self.peaks_plot.set_data(inlet.symmetryIndex.peaks, inlet.symmetryIndex.raw_data[inlet.symmetryIndex.peaks])
+        self.ax.set_xlim(0, 3000)  # Adjust according to your data length
+        self.ax.set_ylim(-2000, 2000)  # Adjust according to your data amplitude
+        self.ax.relim()  # Recompute the ax.dataLim
+        self.ax.autoscale_view()  # Update the view limits
+
+        return self.line, self.peaks_plot
+
+
         
     def add_data(self, data: np.ndarray) -> None:
         """Add data which needs to processed
@@ -215,9 +237,13 @@ class SymmetryIndexFromStream():
 
         # This is the main while loop
         print(self.inlets)
+        # self.ani = FuncAnimation(self.fig, self.update_plot, blit=True, interval=1000)
+        # plt.show()
         while True:
             time.sleep(self.wait_time)
             for inlet in self.inlets:
+                self.ani = FuncAnimation(inlet.symmetryIndex.fig, inlet.symmetryIndex.update_plot, blit=True, interval=1000)
+                plt.show()
                 inlet.get_data()
                 print('store data length: ', len(inlet.store_data))
                 # Checking the inlet data size and send the data to the pylsl stream.

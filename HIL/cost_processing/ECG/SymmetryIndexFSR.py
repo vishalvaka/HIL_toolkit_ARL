@@ -1,3 +1,4 @@
+import asyncio
 import serial
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -7,15 +8,18 @@ import time
 import pylsl
 
 def analyze_data(timestamps, pressures):
-        peaks, _ = find_peaks(pressures, prominence=50)  
-        widths, width_heights, left_ips, right_ips = peak_widths(pressures, peaks, rel_height=0.5)
+    if pressures:
+        peaks, _ = find_peaks(pressures, prominence=50)
+        widths, width_heights, left_ips, right_ips = peak_widths(pressures, peaks, rel_height=0.1)
         return peaks, widths
+    else:
+        return [], []
 
 class SymmetryIndexFSRFromStream():
     def __init__(self, config: dict) -> None:
         self.config = config['RMSSD_config']
 
-        info  = pylsl.StreamInfo(config['Output_stream_name'],  'Marker', 1, 0, 'float32', 'myuidw43537') #type: ignore
+        info = pylsl.StreamInfo(config['Output_stream_name'], 'Marker', 1, 0, 'float32', 'myuidw43537')  # type: ignore
         self.outlet = pylsl.StreamOutlet(info)
 
         self.ser = serial.Serial('COM3', 9600)
@@ -27,47 +31,57 @@ class SymmetryIndexFSRFromStream():
         self.timestamps_fsr2 = []
         self.pressures_fsr2 = []
 
+    async def collect_data(self):
+        while True:
+            line = await asyncio.to_thread(self.ser.readline)
+            line = line.decode().strip()
 
-    def run(self) -> None:
-        beginning = time.time()
+            if line.startswith('FSR1'):
+                data_str = line[len('FSR1 '):]
+                _, pressure_str = data_str.split(', ')
+                timestamp = datetime.now()
+                pressure = float(pressure_str.rstrip(')'))
+                self.timestamps_fsr1.append(timestamp)
+                self.pressures_fsr1.append(pressure)
 
-        try:
-            while True:
-                # time.sleep(self.config['Pubrate'])
-                line = self.ser.readline().decode().strip()
+            elif line.startswith('FSR2'):
+                data_str = line[len('FSR2 '):]
+                _, pressure_str = data_str.split(', ')
+                timestamp = datetime.now()
+                pressure = float(pressure_str.rstrip(')'))
+                self.timestamps_fsr2.append(timestamp)
+                self.pressures_fsr2.append(pressure)
 
-                if line.startswith('FSR1'):
-                    data_str = line[len('FSR1 '):]
-                    _, pressure_str = data_str.split(', ')
-                    timestamp = datetime.now()
-                    pressure = float(pressure_str.rstrip(')'))
-                    self.timestamps_fsr1.append(timestamp)
-                    self.pressures_fsr1.append(pressure)
-            
-                elif line.startswith('FSR2'):
-                    data_str = line[len('FSR2 '):]
-                    _, pressure_str = data_str.split(', ')
-                    timestamp = datetime.now()
-                    pressure = float(pressure_str.rstrip(')'))
-                    self.timestamps_fsr2.append(timestamp)
-                    self.pressures_fsr2.append(pressure)
+    async def send_data(self):
+        while True:
+            await asyncio.sleep(self.config['Pubrate'])
 
-                # Analyze FSR data
-                peaks_fsr1, widths_fsr1 = analyze_data(self.timestamps_fsr1, self.pressures_fsr1)
-                peaks_fsr2, widths_fsr2 = analyze_data(self.timestamps_fsr2, self.pressures_fsr2)
+            if len(self.timestamps_fsr1) > 300 and len(self.timestamps_fsr2) > 300:
+                if self.pressures_fsr1 and self.pressures_fsr2:
+                    _, widths_fsr1 = analyze_data(self.timestamps_fsr1, self.pressures_fsr1)
+                    _, widths_fsr2 = analyze_data(self.timestamps_fsr2, self.pressures_fsr2)
 
-                avg_width_fsr1 = widths_fsr1.mean()
-                avg_width_fsr2 = widths_fsr2.mean()
-                symmetry_index = abs(avg_width_fsr1 - avg_width_fsr2) / ((avg_width_fsr1 + avg_width_fsr2) / 2) * 100
+                    if widths_fsr1.size and widths_fsr2.size:
+                        # avg_width_fsr1 = widths_fsr1.mean()
+                        # avg_width_fsr2 = widths_fsr2.mean()
+                        if len(widths_fsr1) > len(widths_fsr2):
+                            widths_fsr1 = widths_fsr1[:len(widths_fsr2)]
+                        else:
+                            widths_fsr2 = widths_fsr2[:len(widths_fsr1)]
+                        symmetry_index = abs(widths_fsr1 - widths_fsr2) / ((widths_fsr1 + widths_fsr2) / 2) * 100
+                        print(f'sending the symmetry index value: {symmetry_index.mean()}')
+                        self.outlet.push_sample([symmetry_index.mean()])
+            else:
+                print('no data to send')
 
-                now_time = time.time()
+    async def run(self):
+        task1 = asyncio.create_task(self.collect_data())
+        task2 = asyncio.create_task(self.send_data())
+        await task1
+        await task2
 
-                if now_time > beginning:
-                    self.outlet.push_sample([symmetry_index])
-                    beginning = now_time
-        except KeyboardInterrupt:
-            self.ser.close()
-            exit(0)
+    def close_serial(self):
+        self.ser.close()
 
 
     

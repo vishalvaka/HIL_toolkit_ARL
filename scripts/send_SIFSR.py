@@ -1,6 +1,7 @@
 from HIL.cost_processing.ECG.SymmetryIndexFSR import SymmetryIndexFSRFromStream
 import yaml
 import logging
+import asyncio
 
 
 
@@ -20,7 +21,10 @@ config_file = open("configs/FSR.yml", 'r')
 symmetryIndexFSRConfig = yaml.safe_load(config_file)
 
 # cost function
-symmetryIndex = SymmetryIndexFSRFromStream(config=symmetryIndexFSRConfig)
-
-# start the cost function
-symmetryIndex.run()
+if __name__ == "__main__":
+    sym_index_stream = SymmetryIndexFSRFromStream(symmetryIndexFSRConfig)
+    try:
+        asyncio.run(sym_index_stream.run())
+    except KeyboardInterrupt:
+        sym_index_stream.close_serial()
+        print("Shutdown requested by user.")

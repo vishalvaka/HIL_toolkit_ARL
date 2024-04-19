@@ -22,7 +22,7 @@ Optimization:
 
 Multi_Objective_Cost:
   Cost1:
-    Name: "ECG_processed" # name of the first cost function stream
+    Name: "Symmetry Index" # name of the first cost function stream
     time: 90 # time of the first cost function stream. (default: 90)
     n_samples: 5
     avg_time: 14 # average time of the first cost function stream.
