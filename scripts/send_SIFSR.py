@@ -1,30 +1,32 @@
+import asyncio
+import threading
 from HIL.cost_processing.ECG.SymmetryIndexFSR import SymmetryIndexFSRFromStream
 import yaml
 import logging
-import asyncio
 
-
-
+# Setup logging
 logging.basicConfig(level=logging.DEBUG)
-
-logger_blocklist = [
-    "fiona",
-    "rasterio",
-    "matplotlib",
-    "PIL",
-]
-
+logger_blocklist = ["fiona", "rasterio", "matplotlib", "PIL"]
 for module in logger_blocklist:
     logging.getLogger(module).setLevel(logging.WARNING)
-config_file = open("configs/FSR.yml", 'r')
 
-symmetryIndexFSRConfig = yaml.safe_load(config_file)
+# Load configuration
+with open("configs/FSR.yml", 'r') as config_file:
+    symmetryIndexFSRConfig = yaml.safe_load(config_file)
 
-# cost function
+# Define function to run matplotlib in a separate thread
+def run_plot(sym_index_stream):
+    sym_index_stream.run_plotting()
+
 if __name__ == "__main__":
     sym_index_stream = SymmetryIndexFSRFromStream(symmetryIndexFSRConfig)
+    plot_thread = threading.Thread(target=run_plot, args=(sym_index_stream,))
+    plot_thread.start()
+
     try:
         asyncio.run(sym_index_stream.run())
     except KeyboardInterrupt:
         sym_index_stream.close_serial()
         print("Shutdown requested by user.")
+    finally:
+        plot_thread.join()
