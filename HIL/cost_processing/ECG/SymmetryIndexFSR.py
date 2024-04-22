@@ -7,6 +7,11 @@ from scipy.signal import find_peaks, peak_widths
 import time
 import pylsl
 
+def find_arduino_ports():
+    ports = list(serial.tools.list_ports.comports())
+    for port in ports:
+        return port.device
+
 def analyze_data(timestamps, pressures):
     if pressures:
         peaks, _ = find_peaks(pressures, prominence=50)
@@ -21,8 +26,10 @@ class SymmetryIndexFSRFromStream():
 
         info = pylsl.StreamInfo(config['Output_stream_name'], 'Marker', 1, 0, 'float32', 'myuidw43537')  # type: ignore
         self.outlet = pylsl.StreamOutlet(info)
+        
+        self.port = find_arduino_ports()
 
-        self.ser = serial.Serial('COM3', 9600)
+        self.ser = serial.Serial(self.port, 9600) 
         self.ser.flushInput()
 
         self.timestamps_fsr1 = []
