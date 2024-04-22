@@ -2,7 +2,7 @@ RMSSD_config:
   Stream_name : "polar accel"
   Skip_threshold : 40000000000
   Data_buffer_length: 4000
-  Sampling_rate: 133
+  Sampling_rate: 200
   Pubrate: 1
   # stream output information ( may be used in cost)
   Output_stream_name: 'Symmetry Index'

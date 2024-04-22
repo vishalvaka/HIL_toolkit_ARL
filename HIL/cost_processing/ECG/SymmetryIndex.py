@@ -70,7 +70,7 @@ class SymmetryIndexInOut(InletOutlet):
         _, ts = self.inlet.pull_chunk(timeout = 0.0, 
                 max_samples=self.buffer.shape[0],
                 dest_obj=self.buffer)
-        print('self.buffer: ', self.buffer)
+        print('self.buffer.shape[0]: ', self.buffer.shape)
 
         if not ts or self.name != "polar accel":
             self._logger.warning(f"Time stamp is: {ts}, name of the stream: {self.name}")
@@ -82,12 +82,13 @@ class SymmetryIndexInOut(InletOutlet):
         if self.first_data:
             print('first data \n\n\n\n')
             self.store_data = np.array(self.buffer[0:ts.size,:]).T[0]
-            print('self.store_data ', self.store_data)
+            print('self.store_data.size ', self.store_data.size)
             self.first_data = False
 
         else:
             print('calling add data to instatialize self.raw_data')
             self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[0].flatten())
+            print('self.store_data.size ', self.store_data.size)
             self.symmetryIndex.add_data(self.store_data)
             
 
@@ -190,7 +191,7 @@ class SymmetryIndex():
             float: symmetry index mean
         """
 
-        peaks, _ = scipy.signal.find_peaks(-self.raw_data, height=1250, distance=75) #modify height and distance attribute depending on the postion of subject
+        peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=1250, distance=75) #modify height and distance attribute depending on the postion of subject
         print(f'peaks: {peaks}')
         intervals = np.diff(peaks)
 
@@ -242,8 +243,8 @@ class SymmetryIndexFromStream():
         while True:
             time.sleep(self.wait_time)
             for inlet in self.inlets:
-                self.ani = FuncAnimation(inlet.symmetryIndex.fig, inlet.symmetryIndex.update_plot, blit=True, interval=1000)
-                plt.show()
+                # self.ani = FuncAnimation(inlet.symmetryIndex.fig, inlet.symmetryIndex.update_plot, blit=True, interval=1000)
+                # plt.show()
                 inlet.get_data()
                 print('store data length: ', len(inlet.store_data))
                 # Checking the inlet data size and send the data to the pylsl stream.
