@@ -5,4 +5,4 @@ RMSSD_config:
   Sampling_rate: 200
   Pubrate: 1
   # stream output information ( may be used in cost)
-  Output_stream_name: 'Symmetry Index'
+  Output_stream_name: "Symmetry_Index"

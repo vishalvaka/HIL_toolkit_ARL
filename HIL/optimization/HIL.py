@@ -312,6 +312,7 @@ class HIL:
                             new_parameter = self._denormalize_x(new_parameter)
     
                         else:
+                            print(f'self.x_opt: {self.x_opt}, self.y_opt: {self.y_opt}')
                             new_parameter = self.MOBO.generate_next_candidate(
                                 self.x_opt,
                                 self.y_opt,
@@ -594,13 +595,14 @@ class HIL:
         self.x = [[range_arr[0][0]]]
         for i in range(1, n_expl):
             self.x.append([range[0] + i * step for step, range in zip(steps, np.array(range_arr).T)])
-        self.x = np.array(self.x)
+        self.x = np.array(self.x).astype(float)
         # np.random.seed(time.time())
         np.random.shuffle(self.x)
         print(f"###### start functions are {self.x} ######")
 
     def _get_cost(self) -> None:
         print('calling _get_cost')
+        
         """This function extracts cost from pylsl, need to be called all the time."""
         if self.MULTI_OBJECTIVE:
             for i, cost in enumerate(self.cost):
@@ -616,11 +618,13 @@ class HIL:
                     print(
                         f"got cost {self.store_cost_data[i][-1]}, parameter {self.x[self.n]}, time: {self.cost_time - self.start_time}"
                     )
+                    print(f'self.store_cost_data: {self.store_cost_data}')
+                
 
 
         else:
             data, time_stamp = self.cost.extract_data()
-
+            
             if time_stamp is not None:
                 # changing maximization to minimization.
                 data = data[-1] * -1

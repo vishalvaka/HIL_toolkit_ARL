@@ -24,7 +24,7 @@ from matplotlib.animation import FuncAnimation
 class SymmetryIndexInOut(InletOutlet):
     dtypes = [[], np.float32, np.float64, None, np.int32, np.int16, np.int8, np.int64]
 
-    def __init__(self, info: pylsl.StreamInfo, data_length: int, sampling_rate: int = 133, skip_threshold: int = 40) -> None:
+    def __init__(self, info: pylsl.StreamInfo, data_length: int, sampling_rate: int = 133, skip_threshold: int = 40, stream_name: str = 'Symmetry_Index') -> None:
         """Main class which handles the input of the ECG data and output of the rmssd data to the pylsl.
 
         Args:
@@ -41,7 +41,7 @@ class SymmetryIndexInOut(InletOutlet):
         self.store_data = np.array([])
 
         # Information about the outlet stream
-        info  = pylsl.StreamInfo('accel_symmetry',  'Marker', 1, 0, 'float32', 'myuidw43537') #type: ignore
+        info  = pylsl.StreamInfo(stream_name,  'Marker', 1, 0, 'float32', 'myuidw43537') #type: ignore
         self.outlet = pylsl.StreamOutlet(info)
 
         # logging
@@ -229,7 +229,7 @@ class SymmetryIndexFromStream():
             if info.name() == config['Stream_name']:
                 print("#" * 50)
                 self.inlets.append(SymmetryIndexInOut(info, config['Data_buffer_length'], 
-                        sampling_rate=config['Sampling_rate'], skip_threshold=config['Skip_threshold']))
+                        sampling_rate=config['Sampling_rate'], skip_threshold=config['Skip_threshold'], stream_name=config['Output_stream_name']))
 
     def run(self) -> None:
         print('run\n\n\n\n\n\n\n\n\n\n')
