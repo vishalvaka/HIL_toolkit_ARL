@@ -81,13 +81,15 @@ class SymmetryIndexInOut(InletOutlet):
         # For first time
         if self.first_data:
             print('first data \n\n\n\n')
-            self.store_data = np.array(self.buffer[0:ts.size,:]).T[0]
+            # self.store_data = np.array(self.buffer[0:ts.size,:]).T[0] # vertical acceleration
+            self.store_data = np.array(self.buffer[0:ts.size,:]).T[2] # forward acceleration
             print('self.store_data.size ', self.store_data.size)
             self.first_data = False
 
         else:
             print('calling add data to instatialize self.raw_data')
-            self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[0].flatten())
+            # self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[0].flatten()) # vertical acceleration
+            self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[2].flatten()) # forward acceleration
             print('self.store_data.size ', self.store_data.size)
             self.symmetryIndex.add_data(self.store_data)
             
@@ -191,7 +193,9 @@ class SymmetryIndex():
             float: symmetry index mean
         """
 
-        peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=1250, distance=75) #modify height and distance attribute depending on the postion of subject
+        # peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=1250, distance=75) # vertical acceleration # modify height and distance attribute depending on the postion of subject 
+        peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=200, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
+        
         print(f'peaks: {peaks}')
         intervals = np.diff(peaks)
 
