@@ -15,7 +15,7 @@ import neurokit2 as nk
 
 
 # import Qt imports
-from PyQt5 import QtCore, QtGui, QtWidgets
+# from PyQt5 import QtCore, QtGui, QtWidgets
 
 # local imports
 from peaks_rmssd_plot import Ui_MainWindow
@@ -65,7 +65,7 @@ class main_plotting:
         for info in self.streams: #type: ignore
             if info.nominal_srate() != pylsl.IRREGULAR_RATE \
                     and info.channel_format() != pylsl.cf_string:
-                if info.name() == 'polar ECG':
+                if info.name() == 'polar ECG 2':
                     print('Adding data inlet: ' + info.name())
                     self.inlets.append(DataInlet(info))
             else:
@@ -142,7 +142,7 @@ class main_plotting:
 
     def start(self):
         self.MainWindow.show()
-        sys.exit(self.app.exec_())
+        sys.exit(self.app.exec())
 
 
 if __name__ == '__main__':

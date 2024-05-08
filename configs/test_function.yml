@@ -18,18 +18,18 @@ Optimization:
   kernel_function: 'se'
   GP: "Regular"
   normalize: False
-  MultiObjective: 0         
+  MultiObjective: 1         
 
 Multi_Objective_Cost:
   Cost1:
     Name: "test_function" # name of the first cost function stream
     time: 1 # time of the first cost function stream. (default: 90)
-    n_samples: 5
+    n_samples: 1
     avg_time: 14 # average time of the first cost function stream.
     mean_time: 5 # mean time of the first cost function.
   Cost2:
     Name: "test_function_2" # name of the second cost function stream
     time: 1 # time of the second cost function stream. (default: 90)
-    n_samples: 5
+    n_samples: 1
     avg_time: 14 # average time of the second cost function stream.
     mean_time: 5 # mean time of the second cost function. 
