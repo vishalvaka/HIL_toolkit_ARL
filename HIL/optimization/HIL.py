@@ -7,8 +7,8 @@ from typing import List
 from HIL.optimization.BO import BayesianOptimization
 from HIL.optimization.MOBO import MultiObjectiveBayesianOptimization
 from HIL.optimization.extract_cost import ExtractCost
-from HIL.optimization.main_rgpe import BayesianOptimization_rgpe
-from HIL.optimization.main_rgpe_multi import MultiObjectiveBayesianOptimization_rgpe
+# from HIL.optimization.main_rgpe import BayesianOptimization_rgpe
+# from HIL.optimization.main_rgpe_multi import MultiObjectiveBayesianOptimization_rgpe
 
 
 class HIL:
@@ -162,28 +162,28 @@ class HIL:
         print(args["range"][0], args["range"][1])
         print(np.array(list(args["range"])))
 
-        if args['GP'] == 'Regular':
-            if self.MULTI_OBJECTIVE:
-                self.MOBO = MultiObjectiveBayesianOptimization(np.array(list(args["range"])) if not args["normalize"] else [[0.0], [1.0]])
-            else:
-                self.BO = BayesianOptimization(
-                    n_parms=args["n_parms"],
-                    range=np.array(np.array(list(args["range"])) if not args["normalize"] else [[0.0], [1.0]]),
-                    model_save_path=args["model_save_path"],
-                    acq = args["acquisition"],
-                    Kernel=args["kernel_function"]
-                )
-        elif args['GP'] == 'RGPE':
-            if self.MULTI_OBJECTIVE:
-                self.RGPE_MOBO = self.BO_rgpe = MultiObjectiveBayesianOptimization_rgpe(n_params=args['n_parms'], 
-                range=np.array(list(args['range'])), 
-                model_save_path=args['model_save_path'],device= args['device'])
-            else:
-                self.BO_rgpe = BayesianOptimization_rgpe(n_params=args['n_parms'], 
-                range=np.array(list(args['range'])), 
-                model_save_path=args['model_save_path'],device= args['device'])
+        # if args['GP'] == 'Regular':
+        if self.MULTI_OBJECTIVE:
+            self.MOBO = MultiObjectiveBayesianOptimization(np.array(list(args["range"])) if not args["normalize"] else [[0.0], [1.0]], is_rgpe = args['GP'] == 'RGPE', x_dim=args['n_parms'])
         else:
-            raise Exception('GP type is not defined correctly')
+            self.BO = BayesianOptimization(
+                n_parms=args["n_parms"],
+                range=np.array(np.array(list(args["range"])) if not args["normalize"] else [[0.0], [1.0]]),
+                model_save_path=args["model_save_path"],
+                acq = args["acquisition"],
+                Kernel=args["kernel_function"]
+                )
+        # elif args['GP'] == 'RGPE':
+        #     if self.MULTI_OBJECTIVE:
+        #         self.RGPE_MOBO = self.BO_rgpe = MultiObjectiveBayesianOptimization_rgpe(n_params=args['n_parms'], 
+        #         range=np.array(list(args['range'])), 
+        #         model_save_path=args['model_save_path'],device= args['device'])
+        #     else:
+        #         self.BO_rgpe = BayesianOptimization_rgpe(n_params=args['n_parms'], 
+        #         range=np.array(list(args['range'])), 
+        #         model_save_path=args['model_save_path'],device= args['device'])
+        # else:
+        #     raise Exception('GP type is not defined correctly')
 
     def _start_cost(self, args: dict) -> None:
         """Start the cost extraction module
@@ -323,22 +323,22 @@ class HIL:
                         if self.NORMALIZATION:
                             norm_x = self._normalize_x(self.x_opt)
                             norm_y = self._mean_normalize_y_multi(self.y_opt)
-                            if self.args['GP'] == 'RGPE':
-                                self.RGPE_MOBO.run(norm_x, norm_y, self.n)
-                            else:
-                                new_parameter = self.MOBO.generate_next_candidate(norm_x,norm_y)
+                            # if self.args['Optimization']['GP'] == 'RGPE':
+                            #     self.RGPE_MOBO.run(norm_x, norm_y, self.n)
+                            # else:
+                            new_parameter = self.MOBO.generate_next_candidate(norm_x,norm_y)
                             print(f"Next parameter without norm is {new_parameter}")
                             new_parameter = self._denormalize_x(new_parameter)
     
                         else:
                             print(f'self.x_opt: {self.x_opt}, self.y_opt: {self.y_opt}')
-                            if self.args['GP'] == 'RGPE':
-                                self.RGPE_MOBO.run(self.x_opt, self.y_opt, self.n)
-                            else:
-                                new_parameter = self.MOBO.generate_next_candidate(
-                                    self.x_opt,
-                                    self.y_opt,
-                                )
+                            # if self.args['Optimization']['GP'] == 'RGPE':
+                            #     self.RGPE_MOBO.run(self.x_opt, self.y_opt, self.n)
+                            # else:
+                            new_parameter = self.MOBO.generate_next_candidate(
+                                self.x_opt,
+                                self.y_opt,
+                            )
                         
                         print(f"Next parameter is {new_parameter}")
                         self.outlet.push_sample(self.x_opt[-1].tolist() + self.y_opt[-1].flatten().tolist())     # cost has two objectives
@@ -392,22 +392,22 @@ class HIL:
                             if self.NORMALIZATION:
                                 norm_x = self._normalize_x(self.x_opt)
                                 norm_y = self._mean_normalize_y_multi(self.y_opt)
-                                if self.args['GP'] == 'RGPE':
-                                    self.RGPE_MOBO.run(norm_x, norm_y, self.n)
-                                else:
-                                    new_parameter = self.MOBO.generate_next_candidate(norm_x,norm_y)
+                                # if self.args['Optimization']['GP'] == 'RGPE':
+                                #     self.RGPE_MOBO.run(norm_x, norm_y, self.n)
+                                # else:
+                                new_parameter = self.MOBO.generate_next_candidate(norm_x,norm_y)
                                 print(f"Next parameter without norm is {new_parameter}")
                                 new_parameter = self._denormalize_x(new_parameter)
         
                             else:
                                 print(f'self.x_opt: {self.x_opt}, self.y_opt: {self.y_opt}')
-                                if self.args['GP'] == 'RGPE':
-                                    self.RGPE_MOBO.run(self.x_opt, self.y_opt, self.n)
-                                else:
-                                    new_parameter = self.MOBO.generate_next_candidate(
-                                        self.x_opt,
-                                        self.y_opt,
-                                    )
+                                # if self.args['Optimization']['GP'] == 'RGPE':
+                                #     self.RGPE_MOBO.run(self.x_opt, self.y_opt, self.n)
+                                # else:
+                                new_parameter = self.MOBO.generate_next_candidate(
+                                    self.x_opt,
+                                    self.y_opt,
+                                )
                             print(f"Next parameter is {new_parameter}")
                             # TODO Need to save the parameters and data for each iteration
                             self.x = np.concatenate(
@@ -521,7 +521,7 @@ class HIL:
                         if self.NORMALIZATION:
                             norm_x = self._normalize_x(self.x_opt)
                             norm_y = self._mean_normalize_y(self.y_opt)
-                            if self.args["GP"]:
+                            if self.args['Optimization']['GP']:
                                 new_parameter = self.BO_rgpe.run(norm_x, norm_y, self.n)
                             else:
                                 new_parameter = self.BO.run(norm_x.reshape(self.n, -1), norm_y.reshape(self.n, -1))
@@ -530,7 +530,7 @@ class HIL:
     
                         else:
                             norm_y = self._mean_normalize_y(self.y_opt)
-                            if self.args["GP"]:
+                            if self.args['Optimization']['GP']:
                                 new_parameter = self.BO_rgpe.run(self.x_opt.reshape(self.n, -1), self.y_opt.reshape(self.n, -1), self.n)
                             else:
                                 new_parameter = self.BO.run(
@@ -584,7 +584,7 @@ class HIL:
                             if self.NORMALIZATION:
                                 norm_x = self._normalize_x(self.x_opt)
                                 norm_y = self._mean_normalize_y(self.y_opt)
-                                if self.args["GP"]:
+                                if self.args['Optimization']['GP']:
                                     new_parameter = self.BO_rgpe.run(norm_x, norm_y, self.n)
                                 else:
                                     new_parameter = self.BO.run(norm_x.reshape(self.n, -1), norm_y.reshape(self.n, -1))
@@ -593,7 +593,7 @@ class HIL:
         
                             else:
                                 norm_y = self._mean_normalize_y(self.y_opt)
-                                if self.args["GP"]:
+                                if self.args['Optimization']['GP']:
                                     new_parameter = self.BO_rgpe.run(self.x_opt.reshape(self.n, -1), self.y_opt.reshape(self.n, -1), self.n)
                                 else:
                                     new_parameter = self.BO.run(

@@ -10,13 +10,13 @@ Optimization:
   n_parms: 1 # number of parametes
   n_steps: 10 # number of steps
   n_exploration: 3 # number of exploration steps
-  range: [[-1.2], [1.2]] # range of the parameters
+  range: [[-2.0], [2.0]] # range of the parameters
   model_save_path: "models/"
   device: "cuda" # device to use
   n_start_points: 3 # number of start points
   acquisition: 'ei'
   kernel_function: 'se'
-  GP: "Regular"
+  GP: "regular"
   normalize: False
   MultiObjective: 1         
 

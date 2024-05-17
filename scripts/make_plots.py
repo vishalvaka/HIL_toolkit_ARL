@@ -15,7 +15,7 @@ noise_data = []
 
 # data = pd.read_excel('models\test\Feb_29_ETC.xlsx') 
 # Fit GP for entire dataset
-df_xy = pd.read_csv("models/test/Feb_29_ETC.csv", delim_whitespace=True)
+df_xy = pd.read_csv("models/iter_9/data.csv", delim_whitespace=True)
 # df_xy = pd.read_csv("./function_data.csv")
 
 # Extract the 'x' column and convert to a 1D Numpy array

@@ -41,14 +41,18 @@ class RGPE(GP, GPyTorchModel):
             model = self.models[raw_idx]
             posterior = model.posterior(x)
             # unstandardize predictions
-            posterior_mean = posterior.mean.squeeze(-1)*model.Y_std + model.Y_mean
-            posterior_cov = posterior.mvn.lazy_covariance_matrix * model.Y_std.pow(2)
+            # print(f'\n\n\n x.shape: {x.shape}, posterior.mean.shape: {posterior.mean.squeeze(-1).shape}, model.Y_std.shape: {model.Y_std.shape}')
+            posterior_mean = posterior.mean.squeeze(-1)
+            posterior_cov = posterior.mvn.lazy_covariance_matrix #* model.Y_std.pow(2)
             # apply weight
             weight = non_zero_weights[non_zero_weight_idx]
             weighted_means.append(weight * posterior_mean)
             weighted_covars.append(posterior_cov * weight**2)
         # set mean and covariance to be the rank-weighted sum the means and covariances of the
         # base models and target model
+        # print(f'weighted means.shape: {torch.stack(weighted_means).shape}')
         mean_x = torch.stack(weighted_means).sum(dim=0)
         covar_x = PsdSumLazyTensor(*weighted_covars)
+
+        # print(f'\n\nmean_x in forward: {mean_x}')
         return MultivariateNormal(mean_x, covar_x)

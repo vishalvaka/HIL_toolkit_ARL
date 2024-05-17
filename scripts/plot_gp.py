@@ -83,7 +83,7 @@ from botorch.models.converter import batched_to_model_list, model_list_to_batche
 # Load x and y
 # os.chdir(r"./models/iter_15")
 # Import the x and y data
-df_xy = pd.read_csv("models/test/Feb_29_full_data.csv", delim_whitespace=True)
+df_xy = pd.read_csv("models/iter_9/data.csv", delim_whitespace=True)
 # df_xy = pd.read_csv("./function_data.csv")
 
 # Extract the 'x' column and convert to a 1D Numpy array
