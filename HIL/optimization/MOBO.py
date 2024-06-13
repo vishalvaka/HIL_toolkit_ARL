@@ -7,7 +7,7 @@ from botorch.models import SingleTaskGP, ModelListGP
 from gpytorch.mlls.sum_marginal_log_likelihood import SumMarginalLogLikelihood, ExactMarginalLogLikelihood
 from botorch.utils.multi_objective.scalarization import get_chebyshev_scalarization
 from botorch import fit_gpytorch_model
-from botorch.optim.optimize import optimize_acqf_list
+from botorch.optim.optimize import optimize_acqf
 # from botorch.utils.transforms import unnormalize, normalize
 from botorch.acquisition.monte_carlo import qNoisyExpectedImprovement
 from botorch.utils.sampling import sample_simplex
@@ -22,7 +22,7 @@ from gpytorch.kernels import RBFKernel,ScaleKernel
 # from HIL.optimization.rgpe_functons import create_rgpe
 from HIL.optimization.RGPE_model import RGPE
 from gpytorch.likelihoods import GaussianLikelihood
-
+import gpytorch
 
 
 
@@ -35,7 +35,7 @@ class MultiObjectiveBayesianOptimization(object):
         
         self.NUM_RESTARTS =  10
         self.RAW_SAMPLES = 1024
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device = 'cpu'
         self.standard_bounds = torch.tensor(bounds)
         self.MC_SAMPLES = 256
         self.is_rgpe = is_rgpe
@@ -45,7 +45,7 @@ class MultiObjectiveBayesianOptimization(object):
             raise Exception("please give the path for the base models")
         elif self.is_rgpe and self.base_model_path is not None:
             self.create_base_models()
-            print('\n\n length of base model list: ', len(self.base_model_list[1]))
+            print('\n\n length of base model list: ', len(self.base_model_list))
         #bounds = torch.tensor([[-1.2], [1.2]])
     
 
@@ -101,31 +101,33 @@ class MultiObjectiveBayesianOptimization(object):
                 #pred = model.posterior(normalize(train_x, bounds)).mean
                 pred = self.model.posterior(self.x).mean
             print(f'\n\npred: {pred}')
-            acq_fun_list = []
-            for _ in range(n_candidates):
+            # acq_fun_list = []
+            # for _ in range(n_candidates):
                 
                 # weights = sample_simplex(2).squeeze()
-                weights = torch.tensor([0.5, 0.5]) #use this if you want equal importance for both objectives
-                objective = GenericMCObjective(
-                    get_chebyshev_scalarization(
-                        weights,
-                        pred
-                    )
+            weights = torch.tensor([0.5, 0.5]) #use this if you want equal importance for both objectives
+            objective = GenericMCObjective(
+                get_chebyshev_scalarization(
+                    weights,
+                    pred
                 )
-                acq_fun = qNoisyExpectedImprovement(
-                    model=self.model,
-                    objective=objective,
-                    sampler=sampler,
-                    #X_baseline=train_x,
-                    X_baseline=self.x,
-                    prune_baseline=True,
-                )
-                acq_fun_list.append(acq_fun)
+            )
+            acq_fun = qNoisyExpectedImprovement(
+                model=self.model,
+                objective=objective,
+                sampler=sampler,
+                #X_baseline=train_x,
+                X_baseline=self.x,
+                prune_baseline=True,
+            )
+                # acq_fun_list.append(acq_fun)
             
-        
-            candidates, _ = optimize_acqf_list(
-                acq_function_list=acq_fun_list,
+            
+
+            candidates, _ = optimize_acqf(
+                acq_function=acq_fun,
                 bounds=self.standard_bounds,
+                q=1,
                 num_restarts=self.NUM_RESTARTS,
                 raw_samples=self.RAW_SAMPLES,
                 options={
@@ -133,7 +135,26 @@ class MultiObjectiveBayesianOptimization(object):
                     "maxiter": 200,
                 }
             )
-        
+
+            test_x = torch.linspace(self.standard_bounds[0].squeeze(), self.standard_bounds[1].squeeze(), 1000).unsqueeze(-1)
+            acquisition_values = acq_fun(test_x.unsqueeze(-2))
+            max_acq_value, max_index = torch.max(acquisition_values, dim=0)
+            max_acq_x = test_x[max_index]
+
+            max_acq_x_scalar = max_acq_x.item()  # This ensures it's a scalar if it's a single-element tensor
+            max_acq_value_scalar = max_acq_value.item()
+            # Plotting
+            plt.figure(figsize=(10, 5))
+            # plt.plot(train_x.numpy(), train_y.numpy(), 'ro', label='Observations')
+            plt.plot(test_x.numpy(), acquisition_values.detach().numpy(), label='Acquisition Value')
+            plt.scatter(max_acq_x_scalar, max_acq_value_scalar, color='g', s=100, zorder=5, label=f'Max Acq at x={max_acq_x_scalar:.2f}')
+            plt.annotate(f'x={max_acq_x_scalar:.2f}', (max_acq_x_scalar, max_acq_value_scalar), textcoords="offset points", xytext=(0,10), ha='center')
+            plt.title('qNoisyExpected Improvement over Parameter Space')
+            plt.xlabel('Parameter')
+            plt.ylabel('Acquisition Value')
+            plt.legend()
+            plt.show()
+
             #return unnormalize(candidates, bounds)
             return candidates
 
@@ -143,9 +164,10 @@ class MultiObjectiveBayesianOptimization(object):
             models = []
             #csv_files = self.find_csv_filenames("base_models/"+i)
             with open(self.base_model_path+"/"+i+"/data.csv") as f:
-                data = pd.read_csv(f, delim_whitespace=True)
+                data = pd.read_csv(f, delim_whitespace=True, header=None)
             x_df = data.iloc[:, :self.x_dim]
             y_df = data.iloc[:, self.x_dim:]
+            print(f'x_df: {x_df}')
             x = torch.tensor(x_df.values, dtype=torch.float64)
             y = torch.tensor(y_df.values, dtype=torch.float64)
             print(f'x: {x.shape}, y: {y.shape}')
@@ -294,6 +316,60 @@ class MultiObjectiveBayesianOptimization(object):
         Rotate columns to right by shift.
         """
         return torch.cat((X[..., -shift:], X[..., :-shift]), dim=-1)
+    
+    def plot_final(self):
+
+        test_x = torch.linspace(-2, 2, 100).unsqueeze(-1)
+        self.model.eval()
+
+        with torch.no_grad(), gpytorch.settings.fast_pred_var():
+            observed_pred = self.model.posterior(test_x)
+            # observed_pred = self.model.models[i].likelihood(self.model.models[i](test_x))
+            mean = observed_pred.mean
+            lower, upper = observed_pred.mvn.confidence_region()
+            lower = -lower.T
+            upper = -upper.T
+            mean = -mean.T
+            print(f'lower shape: {lower.shape} upper shape: {upper.shape} mean shape: {mean.shape}')
+
+        # Plotting
+        # for i in range(lower.shape[1]):
+        #     plt.figure(figsize=(10, 6))
+        #     # plt.plot(train_x.numpy(), train_y.numpy(), 'k*', label='Training Data')
+        #     plt.plot(test_x.numpy(), mean[i].numpy(), 'b', label='Mean')
+        #     plt.fill_between(test_x.squeeze().numpy(), lower[i].numpy(), upper[i].numpy(), alpha=0.5, label='Confidence Interval')
+        #     plt.xlabel('x')
+        #     plt.ylabel('y')
+        #     plt.title(f'objective {i+1}')
+        #     plt.legend()
+        #     plt.show()
+
+        for i, model in enumerate(self.model.models):
+            with torch.no_grad(), gpytorch.settings.fast_pred_var():
+                observed_pred = model.likelihood(model(test_x))
+                # print("Mean shape:", observed_pred.mean.shape)
+                # print("Covariance shape:", observed_pred.covariance_matrix.shape)
+
+                mean = -observed_pred.mean
+                try:
+                    variance = observed_pred.variance
+                except Exception as e:
+                    print("Error accessing variance:", e)
+                    continue  # Skip this iteration to avoid breaking the loop
+
+                plt.figure(figsize=(10, 6))
+                plt.plot(test_x.numpy().squeeze(), mean.detach().numpy(), 'b', label='Mean')
+                plt.fill_between(test_x.numpy().squeeze(), 
+                    mean.numpy() - 2 * variance.sqrt().numpy(), 
+                    mean.numpy() + 2 * variance.sqrt().numpy(), 
+                    alpha=0.3, color='blue')
+                plt.scatter(self.x, -self.y[:, i], color='blue')
+                plt.xlabel('x')
+                plt.ylabel('y')
+                plt.title(f'objective {i+1}')
+                plt.legend()
+                plt.show()
+
 
         # self.base_model_list = base_model_list   
     
@@ -424,7 +500,15 @@ class MultiObjectiveBayesianOptimization(object):
         save_iter_path = "models/" + f'iter_{len(self.x)}'
         os.makedirs(save_iter_path, exist_ok=True)
         model_path = save_iter_path +'/multi_model.pth'
-        torch.save(self.model.state_dict(), model_path) #type: ignore
+        if self.is_rgpe:
+            save_data = {
+                'model': self.model.state_dict(),
+                'weights': [self.model.models[0].weights, self.model.models[1].weights],
+
+            }
+            torch.save(save_data, model_path) #type: ignore
+        else:
+            torch.save(self.model.state_dict(), model_path)
         data_save = save_iter_path + '/data.csv'
         x = self.x.detach().cpu().numpy()
         y = self.y.detach().cpu().numpy()

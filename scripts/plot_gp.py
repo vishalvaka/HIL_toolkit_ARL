@@ -83,7 +83,7 @@ from botorch.models.converter import batched_to_model_list, model_list_to_batche
 # Load x and y
 # os.chdir(r"./models/iter_15")
 # Import the x and y data
-df_xy = pd.read_csv("models/iter_9/data.csv", delim_whitespace=True)
+df_xy = pd.read_csv("models\iter_10\data.csv", delim_whitespace=True)
 # df_xy = pd.read_csv("./function_data.csv")
 
 # Extract the 'x' column and convert to a 1D Numpy array
@@ -98,7 +98,7 @@ x = df_xy.iloc[:, 0].values
 
 # # Extract the second and third columns as a vector of two objectives (y1 and y2), and convert to a 2D Numpy array
 y = df_xy.iloc[:, 1:].values
-
+y = -y
 
 # # Print the extracted data
 print("x:")
@@ -195,7 +195,7 @@ def _training_multi_objective(train_x, train_y):
     optimizer = torch.optim.Adam(parameters, lr=0.01)
 
     # Training loop
-    for epoch in range(1000):
+    for epoch in range(10000):
         
         optimizer.zero_grad()
         

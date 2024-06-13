@@ -1,4 +1,3 @@
-# general imports
 import logging
 import numpy as np
 import math
@@ -88,8 +87,8 @@ class SymmetryIndexInOut(InletOutlet):
 
         else:
             print('calling add data to instatialize self.raw_data')
-            # self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[0].flatten()) # vertical acceleration
-            self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[2].flatten()) # forward acceleration
+            self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[0].flatten()) # vertical acceleration
+            # self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[2].flatten()) # forward acceleration
             print('self.store_data.size ', self.store_data.size)
             self.symmetryIndex.add_data(self.store_data)
             
@@ -124,11 +123,14 @@ class SymmetryIndexInOut(InletOutlet):
         #     return
 
         # symmetryIndex = - symmetryIndex # Multiplying by -1 because we want to maximize RMSSD
-        self.outlet.push_sample([symmetryIndex])
+        if not math.isnan(symmetryIndex):
+            self.outlet.push_sample([symmetryIndex])
 
-        self.new_data = True
+            self.new_data = True
 
-        self._logger.info(f"Sending the Symmetry Index value {symmetryIndex}")
+            self._logger.info(f"Sending the Symmetry Index value {symmetryIndex}")
+        else:
+            print(f'got {symmetryIndex} from the calculation. please check.')
 
 class SymmetryIndex():
     def __init__(self, sampling_rate: int ) -> None:
@@ -145,22 +147,25 @@ class SymmetryIndex():
         self.line, = self.ax.plot([], [], 'b-')  # Line for raw data
         self.peaks_plot, = self.ax.plot([], [], 'r^')  # Peaks in the data
 
-    def update_plot(self, frame):
-        if not hasattr(self, 'inlets') or not self.inlets:
-            return self.line, self.peaks_plot
+        # Initialize the animation
+        # self.ani = FuncAnimation(self.fig, self.update_plot, blit=True, interval=100)
+
+    # def update_plot(self, frame):
+    #     if self.raw_data.size == 0:
+    #         return self.line, self.peaks_plot
         
-        # Assuming there's only one inlet for simplicity
-        inlet = self.inlets[0]
-        self.line.set_data(np.arange(len(inlet.symmetryIndex.raw_data)), inlet.symmetryIndex.raw_data)
-        self.peaks_plot.set_data(inlet.symmetryIndex.peaks, inlet.symmetryIndex.raw_data[inlet.symmetryIndex.peaks])
-        self.ax.set_xlim(0, 3000)  # Adjust according to your data length
-        self.ax.set_ylim(-2000, 2000)  # Adjust according to your data amplitude
-        self.ax.relim()  # Recompute the ax.dataLim
-        self.ax.autoscale_view()  # Update the view limits
+    #     data_to_plot = self.raw_data[-24000:] if self.raw_data.size > 24000 else self.raw_data
+    #     self.line.set_data(np.arange(len(data_to_plot)), data_to_plot)
+        
+    #     peaks_to_plot = self.peaks[self.peaks >= len(self.raw_data) - len(data_to_plot)] - (len(self.raw_data) - len(data_to_plot))
+    #     self.peaks_plot.set_data(peaks_to_plot, data_to_plot[peaks_to_plot])
 
-        return self.line, self.peaks_plot
+    #     self.ax.set_xlim(0, len(data_to_plot))
+    #     self.ax.set_ylim(min(data_to_plot), max(data_to_plot))
+    #     self.ax.relim()
+    #     self.ax.autoscale_view()
 
-
+    #     return self.line, self.peaks_plot
         
     def add_data(self, data: np.ndarray) -> None:
         """Add data which needs to processed
@@ -168,23 +173,9 @@ class SymmetryIndex():
         Args:
             data (np.ndarray): The ECG data in the form of np.ndarray
         """
-
         print('adding to self.raw_data')
         self.raw_data = data
         print('raw data: \n\n\n', self.raw_data)
-
-    # def _clean_quality(self) -> None:
-
-    #     """Clean the data and perform a quality check
-    #     """
-    #     self.cleaned = nk.ecg_clean(self.raw_data[-8000:], sampling_rate=self.SAMPLING_RATE)
-
-    #     try:
-    #         self.quality = nk.ecg_quality(self.cleaned, method = 'zhao', sampling_rate=self.SAMPLING_RATE)
-    #     except ValueError:
-    #         self.quality = 0
-
-
     
     def _process_data(self) -> float:
         """Process the cleaned data
@@ -192,30 +183,36 @@ class SymmetryIndex():
         Returns:
             float: symmetry index mean
         """
+        mean = np.mean(self.raw_data)
+        std_dev = np.std(self.raw_data)
 
-        # peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=1250, distance=75) # vertical acceleration # modify height and distance attribute depending on the postion of subject 
-        peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=200, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
+        # Set height as mean + some factor of standard deviation
+        height = mean + 1 * std_dev
+
+        # Set distance based on the typical spacing observed or a fraction of the signal length
+        distance = len(self.raw_data) // 10
+        # peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=height, distance=distance) # vertical acceleration # modify height and distance attribute depending on the postion of subject 
+        peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=-50, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
         
-        print(f'peaks: {peaks}')
+        self.peaks = peaks
+        
+        print(f'peaks: {len(peaks)}')
         intervals = np.diff(peaks)
+
 
         stride_times_left = np.array([(intervals[i] + intervals[i + 1])/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
         stride_times_right =  np.array([(intervals[i + 1] + intervals[i + 2])/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
         step_time_left = np.array([intervals[i]/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
         step_time_right = np.array([intervals[i + 1]/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
-        # print(f'step_time_left: {step_time_left}')            
+        print(f'step_time_left: {step_time_left}')            
         symmetry_index = abs((2 * (step_time_left - step_time_right) / (step_time_left + step_time_right)) * 100)
-        # print(f'symmetry Index in process_data function {symmetry_index}')
-
+        print(f'symmetry Index in process_data function {symmetry_index.mean()}')
         return symmetry_index.mean()
     
-    
-
     def get_symmetryindex(self) -> float:
         """Send the processed Symmetry Index value"""
         return self._process_data()
 
-    
 class SymmetryIndexFromStream():
     def __init__(self, config: dict) -> None:
         """Class for getting RMSSD live from stream
@@ -242,17 +239,14 @@ class SymmetryIndexFromStream():
 
         # This is the main while loop
         print(self.inlets)
-        # self.ani = FuncAnimation(self.fig, self.update_plot, blit=True, interval=1000)
-        # plt.show()
         while True:
             time.sleep(self.wait_time)
             for inlet in self.inlets:
-                # self.ani = FuncAnimation(inlet.symmetryIndex.fig, inlet.symmetryIndex.update_plot, blit=True, interval=1000)
-                # plt.show()
                 inlet.get_data()
                 print('store data length: ', len(inlet.store_data))
                 # Checking the inlet data size and send the data to the pylsl stream.
                 if len(inlet.store_data) > 500:
                     inlet.send_data()
+                    # plt.show()
                 else:
                     logging.warn(f"{__name__}: no data to send")

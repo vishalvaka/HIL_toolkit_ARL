@@ -423,6 +423,8 @@ class HIL:
                             self._reset_data_collection()
                             input("Enter to contiue")
                             _, self.start_time = self.cost[0].extract_data()
+                            if self.n == self.args["Optimization"]["n_steps"]:
+                                self.MOBO.plot_final()
                 time.sleep(1)
 
         else:
@@ -649,22 +651,42 @@ class HIL:
         print('calling _get_cost')
         
         """This function extracts cost from pylsl, need to be called all the time."""
+        
         if self.MULTI_OBJECTIVE:
+            updated_start_time = False
             for i, cost in enumerate(self.cost):
                 data, time_stamp = cost.extract_data()
 
                 if time_stamp is not None:
                     # changing maximization to minimization.
                     data = data[-1] * -1
-                    self.cost_time = time_stamp
+                    if i == 0:
+                        self.cost_time = time_stamp
                     self.store_cost_data[i].append(data)
-                    if len(self.store_cost_data[i]) == 1:
-                        self.start_time = time_stamp         
+                    if len(self.store_cost_data[i]) == 1 and i == 0:
+                        print(f'updating start time in get_cost with i = {i}')
+                        self.start_time = time_stamp
+                        updated_start_time = True         
                     print(
                         f"got cost {self.store_cost_data[i][-1]}, parameter {self.x[self.n]}, time: {self.cost_time - self.start_time}"
                     )
                     print(f'self.store_cost_data: {self.store_cost_data}')
-                
+
+
+            # data, time_stamp = self.cost[0].extract_data()
+            
+            # if time_stamp is not None:
+            #     # changing maximization to minimization.
+            #     data = data[-1] * -1
+            #     self.cost_time = time_stamp
+            #     self.store_cost_data.append(data)
+            #     if len(self.store_cost_data) == 1:
+            #         print('updating start time to ', time_stamp)
+            #         self.start_time = time_stamp
+            #     print(
+            #         f"got cost {self.store_cost_data[-1]}, parameter {self.x[self.n]}, time: {self.cost_time - self.start_time}"
+            #     )
+            #     print(f'self.store_cost_data: {self.store_cost_data}')
 
 
         else:
