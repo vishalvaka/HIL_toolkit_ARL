@@ -23,9 +23,84 @@ from gpytorch.kernels import RBFKernel,ScaleKernel
 from HIL.optimization.RGPE_model import RGPE
 from gpytorch.likelihoods import GaussianLikelihood
 import gpytorch
+from torch import Tensor
+from typing import Callable, Optional
+from botorch.utils.transforms import normalize
 
 
+def get_weighted_sum(
+    weights: Tensor, Y: Tensor
+) -> Callable[[Tensor, Optional[Tensor]], Tensor]:
+    r"""Construct an augmented Chebyshev scalarization.
 
+    Augmented Chebyshev scalarization:
+        objective(y) = min(w * y) + alpha * sum(w * y)
+
+    Outcomes are first normalized to [0,1] for maximization (or [-1,0] for minimization)
+    and then an augmented Chebyshev scalarization is applied.
+
+    Note: this assumes maximization of the augmented Chebyshev scalarization.
+    Minimizing/Maximizing an objective is supported by passing a negative/positive
+    weight for that objective. To make all w * y's have positive sign
+    such that they are comparable when computing min(w * y), outcomes of minimization
+    objectives are shifted from [0,1] to [-1,0].
+
+    See [Knowles2005]_ for details.
+
+    This scalarization can be used with qExpectedImprovement to implement q-ParEGO
+    as proposed in [Daulton2020qehvi]_.
+
+    Args:
+        weights: A `m`-dim tensor of weights.
+            Positive for maximization and negative for minimization.
+        Y: A `n x m`-dim tensor of observed outcomes, which are used for
+            scaling the outcomes to [0,1] or [-1,0].
+        alpha: Parameter governing the influence of the weighted sum term. The
+            default value comes from [Knowles2005]_.
+
+    Returns:
+        Transform function using the objective weights.
+
+    Example:
+        >>> weights = torch.tensor([0.75, -0.25])
+        >>> transform = get_aug_chebyshev_scalarization(weights, Y)
+    """
+    if weights.shape != Y.shape[-1:]:
+        raise BotorchTensorDimensionError(
+            "weights must be an `m`-dim tensor where Y is `... x m`."
+            f"Got shapes {weights.shape} and {Y.shape}."
+        )
+    elif Y.ndim > 2:
+        raise NotImplementedError("Batched Y is not currently supported.")
+
+    def chebyshev_obj(Y: Tensor, X: Optional[Tensor] = None) -> Tensor:
+        product = weights * Y
+        # return product.min(dim=-1).values + alpha * product.sum(dim=-1)
+        return product.sum(dim=-1)
+    if Y.shape[-2] == 0:
+        # If there are no observations, we do not need to normalize the objectives
+        return chebyshev_obj
+    if Y.shape[-2] == 1:
+        # If there is only one observation, set the bounds to be
+        # [min(Y_m), min(Y_m) + 1] for each objective m. This ensures we do not
+        # divide by zero
+        Y_bounds = torch.cat([Y, Y + 1], dim=0)
+    else:
+        # Set the bounds to be [min(Y_m), max(Y_m)], for each objective m
+        Y_bounds = torch.stack([Y.min(dim=-2).values, Y.max(dim=-2).values])
+
+    # A boolean mask indicating if minimizing an objective
+    minimize = weights < 0
+
+    def obj(Y: Tensor, X: Optional[Tensor] = None) -> Tensor:
+        # scale to [0,1]
+        Y_normalized = normalize(Y, bounds=Y_bounds)
+        # If minimizing an objective, convert Y_normalized values to [-1,0],
+        # such that min(w*y) makes sense, we want all w*y's to be positive
+        Y_normalized[..., minimize] = Y_normalized[..., minimize] - 1
+        return chebyshev_obj(Y=Y_normalized)
+
+    return obj
 
 class MultiObjectiveBayesianOptimization(object):
 
@@ -104,9 +179,10 @@ class MultiObjectiveBayesianOptimization(object):
             # acq_fun_list = []
             # for _ in range(n_candidates):
                 
-                # weights = sample_simplex(2).squeeze()
+            # weights = sample_simplex(2).squeeze()
             weights = torch.tensor([0.5, 0.5]) #use this if you want equal importance for both objectives
             objective = GenericMCObjective(
+                # get_weighted_sum(
                 get_chebyshev_scalarization(
                     weights,
                     pred
@@ -136,24 +212,24 @@ class MultiObjectiveBayesianOptimization(object):
                 }
             )
 
-            test_x = torch.linspace(self.standard_bounds[0].squeeze(), self.standard_bounds[1].squeeze(), 1000).unsqueeze(-1)
-            acquisition_values = acq_fun(test_x.unsqueeze(-2))
-            max_acq_value, max_index = torch.max(acquisition_values, dim=0)
-            max_acq_x = test_x[max_index]
+            # test_x = np.linspace(self.standard_bounds[0].squeeze(), self.standard_bounds[1].squeeze(), 1000)
+            # acquisition_values = acq_fun(test_x.unsqueeze(-2))
+            # max_acq_value, max_index = torch.max(acquisition_values, dim=0)
+            # max_acq_x = test_x[max_index]
 
-            max_acq_x_scalar = max_acq_x.item()  # This ensures it's a scalar if it's a single-element tensor
-            max_acq_value_scalar = max_acq_value.item()
-            # Plotting
-            plt.figure(figsize=(10, 5))
-            # plt.plot(train_x.numpy(), train_y.numpy(), 'ro', label='Observations')
-            plt.plot(test_x.numpy(), acquisition_values.detach().numpy(), label='Acquisition Value')
-            plt.scatter(max_acq_x_scalar, max_acq_value_scalar, color='g', s=100, zorder=5, label=f'Max Acq at x={max_acq_x_scalar:.2f}')
-            plt.annotate(f'x={max_acq_x_scalar:.2f}', (max_acq_x_scalar, max_acq_value_scalar), textcoords="offset points", xytext=(0,10), ha='center')
-            plt.title('qNoisyExpected Improvement over Parameter Space')
-            plt.xlabel('Parameter')
-            plt.ylabel('Acquisition Value')
-            plt.legend()
-            plt.show()
+            # max_acq_x_scalar = max_acq_x.item()  # This ensures it's a scalar if it's a single-element tensor
+            # max_acq_value_scalar = max_acq_value.item()
+            # # Plotting
+            # plt.figure(figsize=(10, 5))
+            # # plt.plot(train_x.numpy(), train_y.numpy(), 'ro', label='Observations')
+            # plt.plot(test_x.numpy(), acquisition_values.detach().numpy(), label='Acquisition Value')
+            # plt.scatter(max_acq_x_scalar, max_acq_value_scalar, color='g', s=100, zorder=5, label=f'Max Acq at x={max_acq_x_scalar:.2f}')
+            # plt.annotate(f'x={max_acq_x_scalar:.2f}', (max_acq_x_scalar, max_acq_value_scalar), textcoords="offset points", xytext=(0,10), ha='center')
+            # plt.title('qNoisyExpected Improvement over Parameter Space')
+            # plt.xlabel('Parameter')
+            # plt.ylabel('Acquisition Value')
+            # plt.legend()
+            # plt.show()
 
             #return unnormalize(candidates, bounds)
             return candidates
@@ -319,7 +395,7 @@ class MultiObjectiveBayesianOptimization(object):
     
     def plot_final(self):
 
-        test_x = torch.linspace(-2, 2, 100).unsqueeze(-1)
+        test_x = np.linspace(self.standard_bounds[0], self.standard_bounds[1], 100)
         self.model.eval()
 
         with torch.no_grad(), gpytorch.settings.fast_pred_var():

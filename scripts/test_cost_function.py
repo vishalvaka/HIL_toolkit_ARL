@@ -10,11 +10,92 @@ import yaml
 noise_level = 0.0
 
 args = yaml.safe_load(open('configs/test_function.yml','r'))
+# values = np.linspace(args['Optimization']['range'][0][0], args['Optimization']['range'][1][0], num=100)
 
+# output1 = values**2
+# output2 = (values - 4)**2
 
+# # noise1 = np.random.normal(0, np.std(output1))
+# # noise2 = np.random.normal(0, np.std(output2))
+
+# noise1 = 0.0
+# noise2 = 0.0
 def cost_function(x):
     x = np.array(x)
     return sum(- (x - 5 ) ** 2  + 100 + np.random.rand(1) * 0.1)
+
+# def f(x): #ZDT1
+#     x = np.array(x)
+
+#     g = 1 + (9 / (len(x) - 1)) * np.sum(x[1:])
+
+#     return np.array([x[0], g * (1 - np.sqrt(x[0] / g))])
+
+# def f(x): #ZDT2
+#     x = np.array(x)
+
+#     g = 1 + (9 / (len(x) - 1)) * np.sum(x[1:])
+
+#     return np.array([x[0], g * (1 - (x[0] / g) ** 2)])
+
+def f(x): #ZDT2 1-D
+    x = np.array(x)
+
+    return np.array([x, 1 - x ** 2])
+
+# def f(x): #ZDT1 1-D
+#     x = np.array(x)
+
+#     return np.array([x, 1 - np.sqrt(x)])
+
+# def f(x): #fronesca and fleming
+#     n = len(x)
+#     f1 = 1 - np.exp(-np.sum((x - 1 / np.sqrt(n)) ** 2))
+#     f2 = 1 - np.exp(-np.sum((x + 1 / np.sqrt(n)) ** 2))
+#     return np.array([f1, f2])
+
+# def f(x): #Schaffer N1
+#     # print('recieved x: ', x)
+#     # x = x[0][0]
+#     # print(x)
+#     x = np.array(x)
+#     # print(x.shape)
+#     return np.array([x ** 2, (x - 2) ** 2])
+
+# def f(x): #levy and ackley 1d x
+#     print('recieved x: ', x)
+#     x = np.array(x)
+#     f1 = np.sin(3 * np.pi * x)**2 + (x - 1)**2 * (1 + np.sin(3 * np.pi * x)**2)
+#     a = 20
+#     b = 0.2
+#     c = 2 * np.pi
+    
+#     # Calculate the Ackley function
+#     term1 = -a * np.exp(-b * np.sqrt(0.5 * (x**2)))
+#     term2 = -np.exp(0.5 * (np.cos(c * x)))
+#     f2 = term1 + term2 + a + np.exp(1)
+#     return np.array([f1, f2])
+
+def get_std_dev():
+    
+    samples = np.linspace(start=args['Optimization']['range'][0], 
+                                   stop=args['Optimization']['range'][1],
+                                   num=100)
+    
+    output1 = []
+    output2 = []
+
+
+    for sample in samples:
+        result = f(sample)
+        output1.append(result[0])
+        output2.append(result[1])
+
+    output1 = np.array(output1)
+    output2 = np.array(output2)
+    print(output1.shape, output2.shape)
+    
+    return np.std(output1), np.std(output2)
 
 # def f(x, noise_level=noise_level):
 #     results = []
@@ -28,10 +109,12 @@ def cost_function(x):
 #         results.append(sub_results)
 #     return torch.tensor(results, dtype=torch.float32)
 
-def f(x):
-    print('recieved x: ', x)
-    x = x[0][0]
-    return np.array([2 * x**2 - 1.05 * x**4 + (x**6) / 6 - np.cos(x), x**3 - 3 * x - np.sin(x)])
+# def f(x, range):
+#     print('recieved x: ', x)
+#     x = x[0][0]
+    
+#     return np.array([x ** 2 + noise1, (x - 4) ** 2 + noise2])
+
 
 # def f(x, noise_level = noise_level):
 #     results = []
@@ -105,7 +188,7 @@ class test_cost_function:
     def _get_cost(self) -> None:
         """Get the cost function"""
         sample, timestamp = self.inlet.pull_sample()
-
+        sample = sample[:args['Optimization']['n_parms']]
         # print(sample, timestamp)
         if timestamp:
             # print(timestamp, sample)
@@ -122,6 +205,7 @@ class test_cost_function:
             x_parmeter (float): parameter for the cost function.
         """
         counter = 0
+        noise1, noise2 = get_std_dev()
         while True:
             time.sleep(0.1)
             print("running")
@@ -136,10 +220,15 @@ class test_cost_function:
                     self.outlet.push_sample([cost_function(x_parmeter)])
                 else:
                     # func_result = f([x_parmeter], noise_level=noise_level)
-                    func_result = f([x_parmeter])
+                    range = args['Optimization']['range']
+                    print(range)
+                    func_result = f(x_parmeter)
                     print('func_result', func_result)
                     result1 = func_result[0].item()  # Convert to Python scalar
                     result2 = func_result[1].item()  # Convert to Python scalar
+                    # self.outlet.push_sample([result1 + np.random.normal(0, noise1)])
+                    # self.outlet2.push_sample([result2 + np.random.normal(0, noise1)])
+
                     self.outlet.push_sample([result1])
                     self.outlet2.push_sample([result2])
                 # if counter > 10:
