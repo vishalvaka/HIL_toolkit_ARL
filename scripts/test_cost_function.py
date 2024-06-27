@@ -27,26 +27,40 @@ def cost_function(x):
 # def f(x): #ZDT1
 #     x = np.array(x)
 
-#     g = 1 + (9 / (len(x) - 1)) * np.sum(x[1:])
+#     shift = 0.0
+#     g = 1 + ((9 - shift) / (len(x) - 1)) * np.sum(x[1:])
 
-#     return np.array([x[0], g * (1 - np.sqrt(x[0] / g))])
+#     f1 = x[0] * ( 1- shift)
+#     f2 = g * (1 - np.sqrt(x[0] / g))
+    
+#     return np.array([f1, f2])
 
 # def f(x): #ZDT2
 #     x = np.array(x)
+#     shift = 0.0
+#     g = 1 + ((9 - shift) / (len(x) - 1)) * np.sum(x[1:])
 
-#     g = 1 + (9 / (len(x) - 1)) * np.sum(x[1:])
+#     f1 = x[0] * (1 - shift)
+#     f2 = g * (1 - (x[0] / g) ** 2)
 
-#     return np.array([x[0], g * (1 - (x[0] / g) ** 2)])
+#     return np.array([f1, f2])
 
 def f(x): #ZDT2 1-D
     x = np.array(x)
-
-    return np.array([x, 1 - x ** 2])
+    shift = 1.0
+    f1 = x * shift
+    f2 = 1 - (x * shift) ** 2
+    return np.array([f1, f2])
 
 # def f(x): #ZDT1 1-D
 #     x = np.array(x)
 
-#     return np.array([x, 1 - np.sqrt(x)])
+#     shift  = 1.0
+
+#     f1 = x * shift
+#     f2 = 1 - np.sqrt(x * shift)
+
+#     return np.array([f1, f2])
 
 # def f(x): #fronesca and fleming
 #     n = len(x)
@@ -60,7 +74,25 @@ def f(x): #ZDT2 1-D
 #     # print(x)
 #     x = np.array(x)
 #     # print(x.shape)
-#     return np.array([x ** 2, (x - 2) ** 2])
+
+#     shift  = 1.0
+
+#     f1 = (x * shift) ** 2
+#     f2 = (x * shift - 2) ** 2
+#     return np.array([f1, f2])
+
+# def f(x): #Schaffer N2
+#     # print('recieved x: ', x)
+#     # x = x[0][0]
+#     # print(x)
+#     x = np.array(x)
+#     # print(x.shape)
+
+#     shift  = 1.0
+
+#     f1 = (x * shift)
+#     f2 = (x * shift - 2) ** 2
+#     return np.array([f1, f2])
 
 # def f(x): #levy and ackley 1d x
 #     print('recieved x: ', x)

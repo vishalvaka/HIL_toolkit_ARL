@@ -8,8 +8,8 @@ args = yaml.safe_load(open('configs/test_function.yml','r'))
 
 values = np.linspace(args['Optimization']['range'][0][0], args['Optimization']['range'][1][0], num=100000)
 
-output1 = values**2
-output2 = (values - 4)**2
+# output1 = values**2
+# output2 = (values - 2)**2
 
 # noise1 = np.random.normal(0, np.std(output1))
 # noise2 = np.random.normal(0, np.std(output2))
@@ -17,7 +17,7 @@ output2 = (values - 4)**2
 noise1 = 0.0
 noise2 = 0.0
 
-print(np.std(output1))
+# print(np.std(output1))
 
 df_xy = pd.read_csv('models/iter_15/data.csv', delim_whitespace=True, header=None)
 
@@ -31,10 +31,36 @@ def f(x): #ZDT2 1-D
 
     return np.array([x, 1 - x ** 2])
 
+# def f(x): #Schaffer N1
+#     # print('recieved x: ', x)
+#     # x = x[0][0]
+#     # print(x)
+#     x = np.array(x)
+#     # print(x.shape)
+
+#     shift  = 1.0
+
+#     f1 = (x * shift) ** 2
+#     f2 = (x * shift - 2) ** 2
+#     return np.array([f1, f2])
+
+# def f(x): #Schaffer N2
+#     # print('recieved x: ', x)
+#     # x = x[0][0]
+#     # print(x)
+#     x = np.array(x)
+#     # print(x.shape)
+
+#     shift  = 1.0
+
+#     f1 = (x * shift)
+#     f2 = (x * shift - 2) ** 2
+#     return np.array([f1, f2])
+
 # def f(x): #ZDT1 1-D
 #     x = np.array(x)
-
-#     return np.array([x, 1 - np.sqrt(x)])
+#     shift = 1.0
+#     return np.array([x * shift , 1 - np.sqrt(x * shift)])
 
 # def f(x): #levy and ackley 1d
 #     # print('recieved x: ', x)
@@ -61,7 +87,7 @@ def f(x): #ZDT2 1-D
 #     results.append(sub_results)
 #     return torch.tensor(results, dtype=torch.float32)
 
-
+outputs = f(values)
 Y4_clean = np.array([f(xi) for xi in values]).T
 
 # Y4_clean = -Y4_clean
@@ -78,28 +104,41 @@ def custom_scalarization(x, weights, alpha=0.05):
     # return weighted_values.sum(dim = -1)
 custom_scalarized_values = np.array([custom_scalarization(xi, weights, alpha) for xi in values])
 
-fig, ax = plt.subplots(2, 1, figsize=(12, 16))
+fig, ax = plt.subplots(3, 1, figsize=(12, 24))
 
-ax[0].plot(values, Y4_clean[0], label='Component 1', color='blue')
-ax[0].plot(values, Y4_clean[1], label='Component 2', color='green')
-# ax[0].fill_between(values, Y4_clean[0] - np.std(output1), Y4_clean[0] + np.std(output1), color='blue', alpha=0.2)
-# ax[0].fill_between(values, Y4_clean[1] - np.std(output2), Y4_clean[1] + np.std(output2), color='green', alpha=0.2)
-scatter = ax[0].scatter(x, y[:, 0], c=np.arange(len(df_xy)), cmap='viridis', label='Component 1 Points', marker='o')
-ax[0].scatter(x, y[:, 1], c=np.arange(len(df_xy)), cmap='viridis', label='Component 2 Points', marker='o')
-ax[0].set_title('Day 2: Function 2 Components with Noise as Shaded Region and Points Explored')
+ax[0].plot(values, custom_scalarized_values, label='Custom Scalarized Function (min + alpha * sum)', color='purple')
+ax[0].scatter(x, [custom_scalarization(xi, weights, alpha) for xi in x], c=np.arange(len(df_xy)), cmap='viridis', label='Explored Points', marker='o')
+ax[0].set_title('Custom Scalarized Function and Points Explored by GP')
 ax[0].set_xlabel('x')
-ax[0].set_ylabel('Function Value')
+ax[0].set_ylabel('Scalarized Function Value')
 ax[0].legend()
 
-# Plot the custom scalarized function with noise as shaded region
-ax[1].plot(values, custom_scalarized_values, label='Custom Scalarized Function (min + alpha * sum)', color='purple')
-# ax[1].fill_between(x, custom_scalarized_values - 0.1, custom_scalarized_values + 0.1, color='purple', alpha=0.2)
-scatter = ax[1].scatter(x, [custom_scalarization(xi, weights, alpha) for xi in x], c=np.arange(len(df_xy)), cmap='viridis', label='Explored Points', marker='o')
-ax[1].set_title('Custom Scalarized Function (min + alpha * sum, Weights 0.5, 0.5, Alpha 0.05) and Points Explored by GP')
-ax[1].set_xlabel('x')
-ax[1].set_ylabel('Scalarized Function Value')
+# Calculate and plot distances for each iteration
+distances = []
+for i, xi in enumerate(x):
+    max_custom_scalarized_value = np.max(custom_scalarized_values)
+    max_custom_scalarization_at_x = custom_scalarization(xi, weights, alpha)
+    distance = max_custom_scalarized_value - max_custom_scalarization_at_x
+    distances.append(distance)
+
+ax[1].plot(range(len(distances)), distances, label='Distance per Iteration', color='red')
+ax[1].set_title('Distance Between Max Scalarized Value and Current Iteration')
+ax[1].set_xlabel('Iteration')
+ax[1].set_ylabel('Distance')
 ax[1].legend()
 
-# plt.colorbar(scatter, ax=ax[1], label='Iteration Count')
+# Plot the components of the function
+outputs = f(values)
+Y4_clean = np.array([f(xi) for xi in values]).T
+ax[2].plot(values, Y4_clean[0], label='Component 1', color='blue')
+ax[2].plot(values, Y4_clean[1], label='Component 2', color='green')
+scatter = ax[2].scatter(x, y[:, 0], c=np.arange(len(df_xy)), cmap='viridis', label='Component 1 Points', marker='o')
+ax[2].scatter(x, y[:, 1], c=np.arange(len(df_xy)), cmap='viridis', label='Component 2 Points', marker='o')
+ax[2].set_title('Components with Points Explored')
+ax[2].set_xlabel('x')
+ax[2].set_ylabel('Function Value')
+ax[2].legend()
+
+plt.colorbar(scatter, ax=ax[2], label='Iteration Count')
 plt.tight_layout()
 plt.show()
