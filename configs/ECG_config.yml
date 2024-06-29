@@ -15,7 +15,7 @@ Optimization:
   device: "cuda" # device to use
   n_start_points: 3 # number of start points
   acquisition: 'ei'
-  kernel_function: 'se'
+  kernel_function: "SE"
   GP: "Regular"
   normalize: False # If true, change the range in BO.py
   MultiObjective: 1
