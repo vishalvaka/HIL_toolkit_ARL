@@ -194,7 +194,7 @@ class MultiObjectiveBayesianOptimization(object):
             raise Exception("please give the path for the base models")
         elif self.is_rgpe and self.base_model_path is not None:
             self.create_base_models()
-            print('\n\n length of base model list: ', len(self.base_model_list))
+            print('\n\n length of base model list: ', len(self.base_model_list[0]))
         #bounds = torch.tensor([[-1.2], [1.2]])
     
 
@@ -311,6 +311,8 @@ class MultiObjectiveBayesianOptimization(object):
 
     def create_base_models(self, all_positive:bool = False):
         self.base_model_list = []
+        num_objectives = None
+
         for i in os.listdir(self.base_model_path):
             models = []
             #csv_files = self.find_csv_filenames("base_models/"+i)
@@ -331,8 +333,12 @@ class MultiObjectiveBayesianOptimization(object):
             #model=SingleTaskGP(x,y)
             #model.load_state_dict(torch.load("base_models/"+i+"/model.pth" ))
             # model = self.get_fitted_model_for_rgpe(x,y,state_dict =None,dimension=x.shape[0])
-            for i in range(y.shape[-1]):
-                model = SingleTaskGP(x, y[:, i].unsqueeze(-1), covar_module=ScaleKernel(
+            if num_objectives is None:
+                num_objectives = y.shape[-1]
+                self.base_model_list = [[] for _ in range(num_objectives)]
+            
+            for obj_index in range(num_objectives):
+                model = SingleTaskGP(x, y[:, obj_index].unsqueeze(-1), covar_module=ScaleKernel(
                     base_kernel=RBFKernel(ard_num_dims=self.x_dim)))
                 model.likelihood = GaussianLikelihood()
                 model.to(self.device)
@@ -340,8 +346,7 @@ class MultiObjectiveBayesianOptimization(object):
                 model.Y_std = y.std(dim=-2, keepdim=True)
                 mll = ExactMarginalLogLikelihood(model.likelihood, model)
                 fit_gpytorch_model(mll)
-                models.append(model)
-            self.base_model_list.append(models)
+                self.base_model_list[obj_index].append(model)
 
     def compute_weights(self,train_x,train_y, base_models, target_model, num_samples, device):  
         """
