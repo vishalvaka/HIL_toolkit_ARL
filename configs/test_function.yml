@@ -16,7 +16,7 @@ Optimization:
   n_start_points: 3 # number of start points
   acquisition: 'ei'
   kernel_function: 'se'
-  GP: "regular"
+  GP: "RGPE"
   normalize: False
   MultiObjective: 1         
 
