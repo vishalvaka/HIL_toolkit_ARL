@@ -551,7 +551,7 @@ class HIL:
     
                         else:
                             norm_y = self._mean_normalize_y(self.y_opt)
-                            if self.args['Optimization']['GP']:
+                            if self.args['Optimization']['GP'] == 'RGPE':
                                 new_parameter = self.BO_rgpe.run(self.x_opt.reshape(self.n, -1), self.y_opt.reshape(self.n, -1), self.n)
                             else:
                                 new_parameter = self.BO.run(
@@ -560,6 +560,7 @@ class HIL:
                                 )
                         
                         print(f"Next parameter is {new_parameter}")
+                        out = input("Press Y to record the data: N to remove it:")
                         self.outlet.push_sample(self.x_opt[-1].tolist() + [self.y_opt[-1]])
     
                         # TODO Need to save the parameters and data for each iteration,
@@ -605,7 +606,7 @@ class HIL:
                             if self.NORMALIZATION:
                                 norm_x = self._normalize_x(self.x_opt)
                                 norm_y = self._mean_normalize_y(self.y_opt)
-                                if self.args['Optimization']['GP']:
+                                if self.args['Optimization']['GP'] == 'RGPE':
                                     new_parameter = self.BO_rgpe.run(norm_x, norm_y, self.n)
                                 else:
                                     new_parameter = self.BO.run(norm_x.reshape(self.n, -1), norm_y.reshape(self.n, -1))
@@ -614,7 +615,7 @@ class HIL:
         
                             else:
                                 norm_y = self._mean_normalize_y(self.y_opt)
-                                if self.args['Optimization']['GP']:
+                                if self.args['Optimization']['GP'] == 'RGPE':
                                     new_parameter = self.BO_rgpe.run(self.x_opt.reshape(self.n, -1), self.y_opt.reshape(self.n, -1), self.n)
                                 else:
                                     new_parameter = self.BO.run(

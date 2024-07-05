@@ -55,7 +55,7 @@ class BayesianOptimization(object):
             self.covar_module = self.kernel.get_covr_module()
         
         self.n_parms = n_parms
-        self.range = range.reshape(2,self.n_parms).astype(float)
+        self.range = range
         self.norm_range = np.array([0,1]).reshape(2,1).astype(float) # normalized range of parameters (if Normalization is True in the config file)
         self.maximization = maximization
         
