@@ -14,8 +14,8 @@ values = np.linspace(args['Optimization']['range'][0][0], args['Optimization']['
 # noise1 = np.random.normal(0, np.std(output1))
 # noise2 = np.random.normal(0, np.std(output2))
 
-noise1 = 0.0
-noise2 = 0.0
+# noise1 = 0.0
+# noise2 = 0.0
 
 # print(np.std(output1))
 
@@ -57,18 +57,18 @@ y = -y
 #     f2 = (x * shift - 2) ** 2
 #     return np.array([f1, f2])
 
-def f(x): #ZDT1 1-D
-    x = np.array(x)
-    shift = 1.0
-    return np.array([x * shift , 1 - np.sqrt(x * shift)])
+# def f(x): #ZDT1 1-D
+#     x = np.array(x)
+#     shift = 1.0
+#     return np.array([x * shift , 1 - np.sqrt(x * shift)])
 
-# def f(x): #fronesca and fleming
-#     # n = len(x)
-#     n = 1
-#     shift = 0.0
-#     f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
-#     f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
-#     return np.array([f1, f2])
+def f(x): #fronesca and fleming
+    # n = len(x)
+    n = 1
+    shift = 0.0
+    f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
+    f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
+    return np.array([f1, f2])
 
 # def f(x): #levy and ackley 1d
 #     # print('recieved x: ', x)
@@ -95,9 +95,12 @@ def f(x): #ZDT1 1-D
 #     results.append(sub_results)
 #     return torch.tensor(results, dtype=torch.float32)
 
-outputs = f(values)
-print(outputs.shape)
-Y4_clean = np.array([f(xi) for xi in values]).T
+# outputs = f(values)
+# print(outputs.shape)
+# Y4_clean = np.array([f(xi) for xi in values]).T
+
+# noise1 = np.random.normal(0, np.std(outputs[0]))
+# noise2 = np.random.normal(0, np.std(outputs[1]))
 
 # Y4_clean = -Y4_clean
 
@@ -117,7 +120,10 @@ fig, ax = plt.subplots(3, 1, figsize=(12, 24))
 
 ax[0].plot(values, custom_scalarized_values, label='Custom Scalarized Function (min + alpha * sum)', color='purple')
 ax[0].scatter(x, [custom_scalarization(xi, weights, alpha) for xi in x], c=np.arange(len(df_xy)), cmap='viridis', label='Explored Points', marker='o')
-ax[0].set_title('Custom Scalarized Function and Points Explored by GP')
+if args['Optimization']['GP'] == 'RGPE':    
+    ax[0].set_title('Custom Scalarized Function and Points Explored by RGPE')
+else:
+    ax[0].set_title('Custom Scalarized Function and Points Explored by GP')
 ax[0].set_xlabel('x')
 ax[0].set_ylabel('Scalarized Function Value')
 ax[0].legend()
@@ -137,10 +143,13 @@ ax[1].set_ylabel('Distance')
 ax[1].legend()
 
 # Plot the components of the function
-outputs = f(values)
+# outputs = np.array([f(xi) for xi in values]).T
 Y4_clean = np.array([f(xi) for xi in values]).T
+# print(outputs.shape)
 ax[2].plot(values, Y4_clean[0], label='Component 1', color='blue')
 ax[2].plot(values, Y4_clean[1], label='Component 2', color='green')
+ax[2].fill_between(values, Y4_clean[0] - np.std(Y4_clean[0]), Y4_clean[0] + np.std(Y4_clean[0]), color='blue', alpha=0.2)
+ax[2].fill_between(values, Y4_clean[1] - np.std(Y4_clean[1]), Y4_clean[1] + np.std(Y4_clean[1]), color='green', alpha=0.2)
 scatter = ax[2].scatter(x, y[:, 0], c=np.arange(len(df_xy)), cmap='viridis', label='Component 1 Points', marker='o')
 ax[2].scatter(x, y[:, 1], c=np.arange(len(df_xy)), cmap='viridis', label='Component 2 Points', marker='o')
 ax[2].set_title('Components with Points Explored')

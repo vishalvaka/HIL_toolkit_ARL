@@ -442,8 +442,8 @@ class HIL:
                         self._reset_data_collection()
                         # input("Enter to contiue")
                         _, self.start_time = self.cost[0].extract_data()
-                #         if self.n == self.args["Optimization"]["n_steps"]:
-                #             self.MOBO.plot_final()
+                        if self.n == self.args["Optimization"]["n_steps"]:
+                            self.MOBO.plot_final()
                 time.sleep(1)
 
         else:

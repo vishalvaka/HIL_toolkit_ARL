@@ -1,97 +1,45 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+
+# Define the function
+def f(x, shift): 
+    n = len(x)
+    x = np.array(x)
+    f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
+    f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
+    
+    return np.array([f1, f2])
 
 # Define the function f for ZDT1 with shift parameter
-def f(x, shift):
-    x = np.array(x)
-    return np.array([x * shift, 1 - np.sqrt(x * shift)])
+# def f(x, shift):
+#     x = np.array(x)
+#     return np.array([x * shift, 1 - np.sqrt(x * shift)])
 
-# Generate values for x
-x_values = np.linspace(0, 1, 400)
-
-# Define different shift parameters
-shifts = [3.0, 0.9, 1.2, 1.0]
+# Define a range for x
+x_values = np.linspace(-4, 4, 100)
+shifts = [-1.0, 0.5, 1.5, 2]
 
 # Create subplots
-fig, axs = plt.subplots(4, 2, figsize=(14, 16))
+fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+axs = axs.flatten()
 
-# Plot for each shift parameter
+# Plot for each shift value
 for i, shift in enumerate(shifts):
-    f1_values, f2_values = f(x_values, shift)
-    
-    # Plot the function values
-    axs[i, 0].plot(x_values, f1_values, label='$f_1(x)$')
-    axs[i, 0].plot(x_values, f2_values, label='$f_2(x)$')
-    axs[i, 0].set_title(f'Function Values for Shift = {shift}')
-    axs[i, 0].set_xlabel('$x$')
-    axs[i, 0].set_ylabel('Function Values')
-    axs[i, 0].grid(True)
-    axs[i, 0].legend()
-    
-    # Plot the Pareto front
-    axs[i, 1].plot(f1_values, f2_values, label=f'Shift = {shift}')
-    axs[i, 1].set_title(f'Pareto Front for Shift = {shift}')
-    axs[i, 1].set_xlabel('$f_1(x)$')
-    axs[i, 1].set_ylabel('$f_2(x)$')
-    axs[i, 1].grid(True)
-    axs[i, 1].legend()
+    f1_values = []
+    f2_values = []
+    for x in x_values:
+        x_vec = np.array([x])  # Create a vector of length 1
+        f1, f2 = f(x_vec, shift)
+        f1_values.append(f1)
+        f2_values.append(f2)
+
+    axs[i].plot(x_values, f1_values, label='f1')
+    axs[i].plot(x_values, f2_values, label='f2')
+    axs[i].set_title(f'Shift = {shift}')
+    axs[i].set_xlabel('x')
+    axs[i].set_ylabel('f1, f2')
+    axs[i].legend()
+    axs[i].grid(True)
 
 plt.tight_layout()
 plt.show()
-
-# Define new shift parameters
-# import matplotlib.pyplot as plt
-# import numpy as np
-# from mpl_toolkits.mplot3d import Axes3D
-
-# # Define the function f for ZDT2 with shift parameter for 2D x
-# def f(x, shift):
-#     x = np.array(x)
-#     g = 1 + ((9 - shift) / (len(x) - 1)) * np.sum(x[1:])
-
-#     f1 = x[0] * (1 - shift)
-#     f2 = g * (1 - (x[0] / g) ** 2)
-
-#     return np.array([f1, f2])
-
-# # Generate values for x
-# x0_values = np.linspace(0, 1, 100)
-# x1_values = np.linspace(0, 1, 100)
-# x0, x1 = np.meshgrid(x0_values, x1_values)
-# x_flat = np.vstack((x0.flatten(), x1.flatten()))
-
-# # Define shift parameters
-# shifts = [0.0, -3.0, -6.0, -9.0]
-
-# # Create subplots for 3D plots
-# fig = plt.figure(figsize=(20, 16))
-
-# for i, shift in enumerate(shifts):
-#     f1_values = []
-#     f2_values = []
-    
-#     for j in range(x_flat.shape[1]):
-#         f1, f2 = f(x_flat[:, j], shift)
-#         f1_values.append(f1)
-#         f2_values.append(f2)
-    
-#     f1_values = np.array(f1_values).reshape(x0.shape)
-#     f2_values = np.array(f2_values).reshape(x0.shape)
-    
-#     # Plot the function values
-#     ax = fig.add_subplot(4, 2, 2*i+1, projection='3d')
-#     ax.plot_surface(x0, x1, f1_values, cmap='viridis')
-#     ax.set_title(f'Function $f_1$ for Shift = {shift}')
-#     ax.set_xlabel('$x_0$')
-#     ax.set_ylabel('$x_1$')
-#     ax.set_zlabel('$f_1(x)$')
-    
-#     ax = fig.add_subplot(4, 2, 2*i+2, projection='3d')
-#     ax.plot_surface(x0, x1, f2_values, cmap='viridis')
-#     ax.set_title(f'Function $f_2$ for Shift = {shift}')
-#     ax.set_xlabel('$x_0$')
-#     ax.set_ylabel('$x_1$')
-#     ax.set_zlabel('$f_2(x)$')
-
-# plt.tight_layout()
-# plt.show()

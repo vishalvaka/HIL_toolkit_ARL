@@ -64,13 +64,13 @@ def cost_function(x):
 
 #     return np.array([f1, f2])
 
-# def f(x): #fronesca and fleming
-#     x = np.array(x)
-#     n = len(x)
-#     shift = 0.0
-#     f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
-#     f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
-#     return np.array([f1, f2])
+def f(x): #fronesca and fleming
+    x = np.array(x)
+    n = len(x)
+    shift = 0.0
+    f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
+    f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
+    return np.array([f1, f2])
 
 # def f(x): #ZDT2 1-D
 #     x = np.array(x)
@@ -79,15 +79,15 @@ def cost_function(x):
 #     f2 = 1 - (x * shift) ** 2
 #     return np.array([f1, f2])
 
-def f(x): #ZDT1 1-D
-    x = np.array(x)
+# def f(x): #ZDT1 1-D
+#     x = np.array(x)
 
-    shift  = 1.0
+#     shift  = 1.0
 
-    f1 = x * shift
-    f2 = 1 - np.sqrt(x * shift)
+#     f1 = x * shift
+#     f2 = 1 - np.sqrt(x * shift)
 
-    return np.array([f1, f2])
+#     return np.array([f1, f2])
 
 
 # def f(x): #levy and ackley 1d x

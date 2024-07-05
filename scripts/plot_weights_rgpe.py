@@ -41,11 +41,14 @@ for model_index in range(num_models):
         # Extract the weights for the current model and current weight
         weights_model_weight = weights_arr[:, model_index, weight_index]
         
-        plt.plot(iterations, weights_model_weight, marker='o', linestyle='-', label=f'Weight {weight_index + 1}')
+        if weight_index < num_weights - 1:
+            plt.plot(iterations, weights_model_weight, marker='o', linestyle='-', label=f'base model {weight_index + 1}')
+        else:
+            plt.plot(iterations, weights_model_weight, marker='o', linestyle='-', label=f'target model')
     
     plt.xlabel('Iteration')
     plt.ylabel('Weight Value')
-    plt.title(f'Weights vs Iterations for Model {model_index + 1}')
+    plt.title(f'Weights vs Iterations for objective {model_index + 1}')
     plt.grid(True)
     plt.legend()
 

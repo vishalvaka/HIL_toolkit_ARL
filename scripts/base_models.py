@@ -33,28 +33,29 @@ def get_std_dev(shift):
 #     f2 = g * (1 - np.sqrt(x[0] / g))
 #     return np.array([f1, f2])
 
-def f(x, shift=0): #ZDT1 1-D
-    x = np.array(x)
+# def f(x, shift=0): #ZDT1 1-D
+#     x = np.array(x)
 
-    # shift  = 1.0
+#     # shift  = 1.0
 
-    f1 = x * shift
-    f2 = 1 - np.sqrt(x * shift)
+#     f1 = x * shift
+#     f2 = 1 - np.sqrt(x * shift)
 
-    return np.array([f1, f2])
+#     return np.array([f1, f2])
 
 # def f(x, shift):
 #     return x * np.sin(x + np.pi + shift) + 0.1 * x
 
-# def f(x, shift): #fronesca and fleming
-#     n = len(x)
-#     # shift = 0.0
-#     f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
-#     f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
-#     return np.array([f1, f2])
+def f(x, shift): #fronesca and fleming
+    n = len(x)
+    x = np.array(x)
+    # shift = 0.0
+    f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
+    f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
+    return np.array([f1, f2])
 
 # Define shift values and number of samples
-shift_values = [0.9, 1.2, 2.5, 3.0]
+shift_values = [-1.0, 0.5, 1.5, 2]
 num_samples = 20
 
 # Randomly sample points from the function
@@ -73,8 +74,8 @@ for i, shift in enumerate(shift_values):
         #x = np.random.rand(2) # 2D array with values between 0 and 1
         f_values = f(x, shift)
         # data.append([x[0], x[1], f_values[0], f_values[1]])
-        data.append([x[0], f_values[0][0] + np.random.normal(0, noise1), f_values[1][0] + np.random.normal(0, noise2)])
-        # data.append([x[0], f_values[0][0], f_values[1][0]])
+        data.append([x[0], f_values[0] + np.random.normal(0, noise1), f_values[1] + np.random.normal(0, noise2)])
+        # data.append([x[0], f_values[0], f_values[1]])
         # data.append([x[0], f_values[0]])
     # Convert to DataFrame
     df = pd.DataFrame(data)

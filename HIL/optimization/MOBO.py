@@ -483,15 +483,15 @@ class MultiObjectiveBayesianOptimization(object):
         test_x = np.linspace(self.standard_bounds[0], self.standard_bounds[1], 100)
         self.model.eval()
 
-        with torch.no_grad(), gpytorch.settings.fast_pred_var():
-            observed_pred = self.model.posterior(test_x)
-            # observed_pred = self.model.models[i].likelihood(self.model.models[i](test_x))
-            mean = observed_pred.mean
-            lower, upper = observed_pred.mvn.confidence_region()
-            lower = -lower.T
-            upper = -upper.T
-            mean = -mean.T
-            print(f'lower shape: {lower.shape} upper shape: {upper.shape} mean shape: {mean.shape}')
+        # with torch.no_grad(), gpytorch.settings.fast_pred_var():
+        #     observed_pred = self.model.posterior(test_x)
+        #     # observed_pred = self.model.models[i].likelihood(self.model.models[i](test_x))
+        #     mean = observed_pred.mean
+        #     lower, upper = observed_pred.mvn.confidence_region()
+        #     lower = -lower.T
+        #     upper = -upper.T
+        #     mean = -mean.T
+        #     print(f'lower shape: {lower.shape} upper shape: {upper.shape} mean shape: {mean.shape}')
 
         # Plotting
         # for i in range(lower.shape[1]):
