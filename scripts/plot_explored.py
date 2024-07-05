@@ -134,7 +134,7 @@ for i, xi in enumerate(x):
     max_custom_scalarized_value = np.max(custom_scalarized_values)
     max_custom_scalarization_at_x = custom_scalarization(xi, weights, alpha)
     distance = max_custom_scalarized_value - max_custom_scalarization_at_x
-    distances.append(distance)
+    distances.append(distance.item())
 
 ax[1].plot(range(len(distances)), distances, label='Distance per Iteration', color='red')
 ax[1].set_title('Distance Between Max Scalarized Value and Current Iteration')
@@ -159,4 +159,7 @@ ax[2].legend()
 
 plt.colorbar(scatter, ax=ax[2], label='Iteration Count')
 plt.tight_layout()
-plt.show()
+# plt.show()
+
+distances_df = pd.DataFrame(distances)
+distances_df.to_csv('models/distances/distances.csv', sep=' ', header=False, index=False)
