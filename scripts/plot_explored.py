@@ -21,15 +21,15 @@ noise2 = 0.0
 
 df_xy = pd.read_csv('models/iter_15/data.csv', delim_whitespace=True, header=None)
 
-x = torch.tensor(df_xy.iloc[:, :args['Optimization']['n_parms']].values, dtype = torch.float64).squeeze(-1)
+x = np.array(df_xy.iloc[:, :args['Optimization']['n_parms']].values, dtype = np.float64).squeeze(-1)
 
-y = torch.tensor(df_xy.iloc[:, args['Optimization']['n_parms']:].values, dtype = torch.float64).squeeze()
+y = np.array(df_xy.iloc[:, args['Optimization']['n_parms']:].values, dtype = np.float64).squeeze()
 y = -y
 
-def f(x): #ZDT2 1-D
-    x = np.array(x)
+# def f(x): #ZDT2 1-D
+#     x = np.array(x)
 
-    return np.array([x, 1 - x ** 2])
+#     return np.array([x, 1 - x ** 2])
 
 # def f(x): #Schaffer N1
 #     # print('recieved x: ', x)
@@ -57,10 +57,18 @@ def f(x): #ZDT2 1-D
 #     f2 = (x * shift - 2) ** 2
 #     return np.array([f1, f2])
 
-# def f(x): #ZDT1 1-D
-#     x = np.array(x)
-#     shift = 1.0
-#     return np.array([x * shift , 1 - np.sqrt(x * shift)])
+def f(x): #ZDT1 1-D
+    x = np.array(x)
+    shift = 1.0
+    return np.array([x * shift , 1 - np.sqrt(x * shift)])
+
+# def f(x): #fronesca and fleming
+#     # n = len(x)
+#     n = 1
+#     shift = 0.0
+#     f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
+#     f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
+#     return np.array([f1, f2])
 
 # def f(x): #levy and ackley 1d
 #     # print('recieved x: ', x)
@@ -88,6 +96,7 @@ def f(x): #ZDT2 1-D
 #     return torch.tensor(results, dtype=torch.float32)
 
 outputs = f(values)
+print(outputs.shape)
 Y4_clean = np.array([f(xi) for xi in values]).T
 
 # Y4_clean = -Y4_clean

@@ -22,12 +22,14 @@ args = yaml.safe_load(open('configs/test_function.yml','r'))
 # noise2 = 0.0
 def cost_function(x):
     x = np.array(x)
-    return sum(- (x - 5 ) ** 2  + 100 + np.random.rand(1) * 0.1)
+    # return sum(- (x - 5 ) ** 2  + 100 + np.random.rand(1) * 0.1)
+    shift = 0
+    return x * np.sin(x + np.pi + shift) + 0.1 * x
 
 # def f(x): #ZDT1
 #     x = np.array(x)
 
-#     shift = 0.0
+#     shift = 0
 #     g = 1 + ((9 - shift) / (len(x) - 1)) * np.sum(x[1:])
 
 #     f1 = x[0] * ( 1- shift)
@@ -45,12 +47,12 @@ def cost_function(x):
 
 #     return np.array([f1, f2])
 
-def f(x): #ZDT2 1-D
-    x = np.array(x)
-    shift = 1.0
-    f1 = x * shift
-    f2 = 1 - (x * shift) ** 2
-    return np.array([f1, f2])
+# def f(x): #ZDT2 1-D
+#     x = np.array(x)
+#     shift = 1.0
+#     f1 = x * shift
+#     f2 = 1 - (x * shift) ** 2
+#     return np.array([f1, f2])
 
 # def f(x): #ZDT1 1-D
 #     x = np.array(x)
@@ -63,36 +65,30 @@ def f(x): #ZDT2 1-D
 #     return np.array([f1, f2])
 
 # def f(x): #fronesca and fleming
+#     x = np.array(x)
 #     n = len(x)
-#     f1 = 1 - np.exp(-np.sum((x - 1 / np.sqrt(n)) ** 2))
-#     f2 = 1 - np.exp(-np.sum((x + 1 / np.sqrt(n)) ** 2))
+#     shift = 0.0
+#     f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
+#     f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
 #     return np.array([f1, f2])
 
-# def f(x): #Schaffer N1
-#     # print('recieved x: ', x)
-#     # x = x[0][0]
-#     # print(x)
+# def f(x): #ZDT2 1-D
 #     x = np.array(x)
-#     # print(x.shape)
-
-#     shift  = 1.0
-
-#     f1 = (x * shift) ** 2
-#     f2 = (x * shift - 2) ** 2
+#     shift = 1.0
+#     f1 = x * shift
+#     f2 = 1 - (x * shift) ** 2
 #     return np.array([f1, f2])
 
-# def f(x): #Schaffer N2
-#     # print('recieved x: ', x)
-#     # x = x[0][0]
-#     # print(x)
-#     x = np.array(x)
-#     # print(x.shape)
+def f(x): #ZDT1 1-D
+    x = np.array(x)
 
-#     shift  = 1.0
+    shift  = 1.0
 
-#     f1 = (x * shift)
-#     f2 = (x * shift - 2) ** 2
-#     return np.array([f1, f2])
+    f1 = x * shift
+    f2 = 1 - np.sqrt(x * shift)
+
+    return np.array([f1, f2])
+
 
 # def f(x): #levy and ackley 1d x
 #     print('recieved x: ', x)
@@ -258,11 +254,11 @@ class test_cost_function:
                     print('func_result', func_result)
                     result1 = func_result[0].item()  # Convert to Python scalar
                     result2 = func_result[1].item()  # Convert to Python scalar
-                    # self.outlet.push_sample([result1 + np.random.normal(0, noise1)])
-                    # self.outlet2.push_sample([result2 + np.random.normal(0, noise1)])
+                    self.outlet.push_sample([result1 + np.random.normal(0, noise1)])
+                    self.outlet2.push_sample([result2 + np.random.normal(0, noise2)])
 
-                    self.outlet.push_sample([result1])
-                    self.outlet2.push_sample([result2])
+                    # self.outlet.push_sample([result1])
+                    # self.outlet2.push_sample([result2])
                 # if counter > 10:
                 #     del self.inlet
                 #     self._get_streams()
