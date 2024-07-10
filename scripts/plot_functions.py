@@ -1,26 +1,56 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Define the function
-def f(x, shift): 
-    n = len(x)
-    x = np.array(x)
-    f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
-    f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
-    
-    return np.array([f1, f2])
+# Define the function f  (for 1-d optimization)
+# Schaffer
+def f(x, shift):
+    f1 = (shift*x)**2
+    f2 = (shift*x - 2)**2
+    return f1, f2
+# Define a range for x
+# Schaffer
+x_values = np.linspace(0, 2, 100)
+shifts = [0.9, 1.2, 1.5, 3]
 
-# Define the function f for ZDT1 with shift parameter
+
+# #ZDT1
 # def f(x, shift):
 #     x = np.array(x)
-#     return np.array([x * shift, 1 - np.sqrt(x * shift)])
+#     f1 = x * shift
+#     f2 = 1 - np.sqrt(x * shift)
+#     return np.array([f1, f2])
 
-# Define a range for x
-x_values = np.linspace(-4, 4, 100)
-shifts = [-1.0, 0.5, 1.5, 2]
+# # Define a range for x - ZDT1
+# x_values = np.linspace(0, 1, 100)
+# shifts = [0.9, 1.2, 1.5, 3]
+
+# #ZDT2
+# def f(x, shift): 
+#     x = np.array(x)
+#     f1 = x * shift
+#     f2 = 1 - (x * shift) ** 2
+#     return np.array([f1, f2])
+
+# # Define a range for x - ZDT2
+# x_values = np.linspace(0, 1, 100)
+# shifts = [0.9, 1.2, 1.5, 3]
+
+# # FON
+# def f(x, shift): 
+#     n = len(x)
+#     x = np.array(x)
+#     f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
+#     f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
+    
+#     return np.array([f1, f2])
+
+# # Define a range for x - FON
+# x_values = np.linspace(-4, 4, 100)
+# shifts = [0.9, 1.2, 1.5, 3]
+
 
 # Create subplots
-fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+fig, axs = plt.subplots(3, 2, figsize=(12, 10))
 axs = axs.flatten()
 
 # Plot for each shift value
