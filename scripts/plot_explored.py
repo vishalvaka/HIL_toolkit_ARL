@@ -3,6 +3,8 @@ import yaml
 import pandas as pd
 import torch
 import matplotlib.pyplot as plt
+import os
+import re
 
 args = yaml.safe_load(open('configs/test_function.yml','r'))
 
@@ -57,18 +59,18 @@ y = -y
 #     f2 = (x * shift - 2) ** 2
 #     return np.array([f1, f2])
 
-# def f(x): #ZDT1 1-D
-#     x = np.array(x)
-#     shift = 1.0
-#     return np.array([x * shift , 1 - np.sqrt(x * shift)])
+def f(x): #ZDT1 1-D
+    x = np.array(x)
+    shift = 1.0
+    return np.array([x * shift , 1 - np.sqrt(x * shift)])
 
-def f(x): #fronesca and fleming
-    # n = len(x)
-    n = 1
-    shift = 0.0
-    f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
-    f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
-    return np.array([f1, f2])
+# def f(x): #fronesca and fleming
+#     # n = len(x)
+#     n = 1
+#     shift = 0.0
+#     f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
+#     f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
+#     return np.array([f1, f2])
 
 # def f(x): #levy and ackley 1d
 #     # print('recieved x: ', x)
@@ -130,11 +132,16 @@ ax[0].legend()
 
 # Calculate and plot distances for each iteration
 distances = []
+distances = np.array(distances)
 for i, xi in enumerate(x):
     max_custom_scalarized_value = np.max(custom_scalarized_values)
     max_custom_scalarization_at_x = custom_scalarization(xi, weights, alpha)
     distance = max_custom_scalarized_value - max_custom_scalarization_at_x
-    distances.append(distance.item())
+    if distances.size == 0 or distance < np.min(distances):
+        distances = np.append(distances, distance)
+    else:
+        smallest_value = np.min(distances)
+        distances = np.append(distances, smallest_value)
 
 ax[1].plot(range(len(distances)), distances, label='Distance per Iteration', color='red')
 ax[1].set_title('Distance Between Max Scalarized Value and Current Iteration')
@@ -161,5 +168,39 @@ plt.colorbar(scatter, ax=ax[2], label='Iteration Count')
 plt.tight_layout()
 # plt.show()
 
-distances_df = pd.DataFrame(distances)
-distances_df.to_csv('models/distances/distances.csv', sep=' ', header=False, index=False)
+# distances_df = pd.DataFrame(distances)
+# distances_df.to_csv('models/distances/distances.csv', sep=' ', header=False, index=False)
+
+# Function to save the CSV with incremented filename
+def save_csv_incremented(folder_path, base_name="distances", data=None):
+    if data is None:
+        data = distances
+
+    # Check if the folder exists, if not create it
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+    # Find the highest number in the existing files
+    existing_files = os.listdir(folder_path)
+    base_pattern = re.compile(rf"{base_name}(\d+)\.csv")
+    max_index = 0
+    for file in existing_files:
+        match = base_pattern.match(file)
+        if match:
+            max_index = max(max_index, int(match.group(1)))
+
+    # Increment the index for the new file
+    new_index = max_index + 1
+    file_path = os.path.join(folder_path, f"{base_name}{new_index}.csv")
+
+    # Save the data to the CSV file
+    pd.DataFrame(data).to_csv(file_path, sep=' ', header=False, index=False)
+
+    print(f"CSV file created: {file_path}")
+
+# Usage
+folder_path = f"models/distances/{args["Optimization"]["GP"]}"
+save_csv_incremented(folder_path, data=distances)
+
+# Show plot
+plt.show()

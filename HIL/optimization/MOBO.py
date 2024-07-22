@@ -251,7 +251,7 @@ class MultiObjectiveBayesianOptimization(object):
             with torch.no_grad():
                 #pred = model.posterior(normalize(train_x, bounds)).mean
                 pred = self.model.posterior(self.x).mean
-            print(f'\n\npred: {pred}')
+            # print(f'\n\npred: {pred}')
             # acq_fun_list = []
             # for _ in range(n_candidates):
                 
