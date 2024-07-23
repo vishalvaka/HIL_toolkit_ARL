@@ -251,7 +251,7 @@ class MultiObjectiveBayesianOptimization(object):
             with torch.no_grad():
                 #pred = model.posterior(normalize(train_x, bounds)).mean
                 pred = self.model.posterior(self.x).mean
-            print(f'\n\npred: {pred}')
+            # print(f'\n\npred: {pred}')
             # acq_fun_list = []
             # for _ in range(n_candidates):
                 
@@ -481,6 +481,7 @@ class MultiObjectiveBayesianOptimization(object):
     def plot_final(self):
 
         test_x = np.linspace(self.standard_bounds[0], self.standard_bounds[1], 100)
+        test_x = torch.from_numpy(test_x).float()
         self.model.eval()
 
         # with torch.no_grad(), gpytorch.settings.fast_pred_var():
@@ -508,15 +509,18 @@ class MultiObjectiveBayesianOptimization(object):
         for i, model in enumerate(self.model.models):
             with torch.no_grad(), gpytorch.settings.fast_pred_var():
                 observed_pred = model.likelihood(model(test_x))
-                # print("Mean shape:", observed_pred.mean.shape)
-                # print("Covariance shape:", observed_pred.covariance_matrix.shape)
-
-                mean = -observed_pred.mean
-                try:
-                    variance = observed_pred.variance
-                except Exception as e:
-                    print("Error accessing variance:", e)
-                    continue  # Skip this iteration to avoid breaking the loop
+                if isinstance(observed_pred, gpytorch.distributions.MultivariateNormal):
+                    mean = -observed_pred.mean
+                    try:
+                        variance = observed_pred.variance
+                    except AttributeError:
+                        variance = observed_pred.covariance_matrix.diag()
+                else:
+                    mean = -observed_pred[0].mean
+                    try:
+                        variance = observed_pred[0].variance
+                    except AttributeError:
+                        variance = observed_pred[0].covariance_matrix.diag()
 
                 plt.figure(figsize=(10, 6))
                 plt.plot(test_x.numpy().squeeze(), mean.detach().numpy(), 'b', label='Mean')
@@ -527,7 +531,7 @@ class MultiObjectiveBayesianOptimization(object):
                 plt.scatter(self.x, -self.y[:, i], color='blue')
                 plt.xlabel('x')
                 plt.ylabel('y')
-                plt.title(f'objective {i+1}')
+                plt.title(f'{'RGPE' if self.is_rgpe else 'Regular GP'} objective {i+1}')
                 plt.legend()
                 plt.show()
 

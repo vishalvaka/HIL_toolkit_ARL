@@ -7,10 +7,6 @@ import yaml
 from HIL.optimization.HIL import HIL
 
 
-
-
-
-
 def run():
 
     args = yaml.safe_load(open('configs/test_function.yml','r'))

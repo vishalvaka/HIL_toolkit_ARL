@@ -54,23 +54,29 @@ def cost_function(x):
 #     f2 = 1 - (x * shift) ** 2
 #     return np.array([f1, f2])
 
-# def f(x): #ZDT1 1-D
+def f(x): #ZDT1 1-D
+    x = np.array(x)
+
+    shift  = 1.0
+
+    f1 = x * shift
+    f2 = 1 - np.sqrt(x * shift)
+
+    return np.array([f1, f2])
+
+# def f(x): #fronesca and fleming
 #     x = np.array(x)
-
-#     shift  = 1.0
-
-#     f1 = x * shift
-#     f2 = 1 - np.sqrt(x * shift)
-
+#     n = len(x)
+#     shift = 0.0
+#     f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
+#     f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
 #     return np.array([f1, f2])
 
-def f(x): #fronesca and fleming
-    x = np.array(x)
-    n = len(x)
-    shift = 0.0
-    f1 = 1 - np.exp(-np.sum((x + shift - 1 / np.sqrt(n)) ** 2))
-    f2 = 1 - np.exp(-np.sum((x + shift + 1 / np.sqrt(n)) ** 2))
-    return np.array([f1, f2])
+# def f(x, shift = 1.0): #schaffer
+#     x = np.array(x)
+#     f1 = (shift*x)**2
+#     f2 = (shift*x - 2)**2
+#     return np.array([f1, f2])
 
 # def f(x): #ZDT2 1-D
 #     x = np.array(x)
@@ -103,27 +109,6 @@ def f(x): #fronesca and fleming
 #     term2 = -np.exp(0.5 * (np.cos(c * x)))
 #     f2 = term1 + term2 + a + np.exp(1)
 #     return np.array([f1, f2])
-
-def get_std_dev():
-    
-    samples = np.linspace(start=args['Optimization']['range'][0], 
-                                   stop=args['Optimization']['range'][1],
-                                   num=100)
-    
-    output1 = []
-    output2 = []
-
-
-    for sample in samples:
-        result = f(sample)
-        output1.append(result[0])
-        output2.append(result[1])
-
-    output1 = np.array(output1)
-    output2 = np.array(output2)
-    print(output1.shape, output2.shape)
-    
-    return np.std(output1), np.std(output2)
 
 # def f(x, noise_level=noise_level):
 #     results = []
@@ -226,14 +211,35 @@ class test_cost_function:
             print(f"Received {sample} at time {timestamp}")
             self.x_parmeter = sample
 
-    def run(self,) -> None:
+    def get_std_dev(self, f):
+    
+        samples = np.linspace(start=args['Optimization']['range'][0], 
+                                    stop=args['Optimization']['range'][1],
+                                    num=100)
+        
+        output1 = []
+        output2 = []
+
+
+        for sample in samples:
+            result = f(sample)
+            output1.append(result[0])
+            output2.append(result[1])
+
+        output1 = np.array(output1)
+        output2 = np.array(output2)
+        print(output1.shape, output2.shape)
+        
+        return np.std(output1), np.std(output2)
+
+    def run(self,f=f) -> None:
         """Main run function for the cost function this will take the parameters and send the cost function to the outlet.
 
         Args:
             x_parmeter (float): parameter for the cost function.
         """
         counter = 0
-        noise1, noise2 = get_std_dev()
+        noise1, noise2 = self.get_std_dev(f)
         while True:
             time.sleep(0.1)
             print("running")

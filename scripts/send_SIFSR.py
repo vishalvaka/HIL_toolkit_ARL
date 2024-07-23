@@ -20,13 +20,14 @@ def run_plot(sym_index_stream):
 
 if __name__ == "__main__":
     sym_index_stream = SymmetryIndexFSRFromStream(symmetryIndexFSRConfig)
-    plot_thread = threading.Thread(target=run_plot, args=(sym_index_stream,))
-    plot_thread.start()
-
-    try:
-        asyncio.run(sym_index_stream.run())
-    except KeyboardInterrupt:
-        sym_index_stream.close_serial()
-        print("Shutdown requested by user.")
-    finally:
-        plot_thread.join()
+    # plot_thread = threading.Thread(target=run_plot, args=(sym_index_stream,))
+    # plot_thread.start()
+    # sym_index_stream.run()
+    # try:
+    #     asyncio.run(sym_index_stream.run())
+    # except KeyboardInterrupt:
+    #     sym_index_stream.close_serial()
+    #     print("Shutdown requested by user.")
+    # finally:
+    #     plot_thread.join()
+    asyncio.run(sym_index_stream.run())
