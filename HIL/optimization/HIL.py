@@ -457,13 +457,14 @@ class HIL:
                 self.outlet.push_sample(self.x[0,:].tolist() + [0])
             # start the optimization loop.
             while self.n < self.args["Optimization"]["n_steps"]:
-                message = ','.join(map(str, self.x[self.n,:]))
-
-                print('\n\n\n\n', message)
-                self.client_socket.sendto(message.encode('utf-8'), self.server_address)
+                
                 print('n = ', self.n)
                 # Still in exploration
                 if self.n < self.args["Optimization"]["n_exploration"]:
+                    message = ','.join(map(str, self.x[self.n,:]))
+
+                    print('\n\n\n\n', message)
+                    self.client_socket.sendto(message.encode('utf-8'), self.server_address)
                     print(
                         f"In the exploration step {self.n}, parameter {self.x[self.n]}, len_cost {len(self.store_cost_data)}"
                     )
