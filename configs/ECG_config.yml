@@ -1,16 +1,16 @@
 
 Cost:
   Name: "Met_cost" # name of the cost function stream
-  time: 10 # time of the cost function stream. (default:90)
+  time: 90 # time of the cost function stream. (default:90)
   n_samples: 5
   avg_time: 14 # average time of the cost function stream.
   mean_time: 5 # mean time of the cost function.
 
 Optimization:
-  n_parms: 2 # number of parametes
-  n_steps: 8 # number of steps
+  n_parms: 1 # number of parametes
+  n_steps: 7 # number of steps
   n_exploration: 3 # number of exploration steps
-  range: [[10.0, 0.46], [30.0, 0.47]] # range of the parameters
+  range: [[20.0], [80.0]] # range of the parameters
   model_save_path: "models/"
   device: "cuda" # device to use
   n_start_points: 3 # number of start points
@@ -18,7 +18,7 @@ Optimization:
   kernel_function: "SE"
   GP: "Regular"
   normalize: False # If true, change the range in BO.py
-  MultiObjective: 1
+  MultiObjective: 0
 
 Multi_Objective_Cost:
   Cost1:

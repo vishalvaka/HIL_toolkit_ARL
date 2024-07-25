@@ -457,6 +457,10 @@ class HIL:
                 self.outlet.push_sample(self.x[0,:].tolist() + [0])
             # start the optimization loop.
             while self.n < self.args["Optimization"]["n_steps"]:
+                message = ','.join(map(str, self.x[self.n,:]))
+
+                print('\n\n\n\n', message)
+                self.client_socket.sendto(message.encode('utf-8'), self.server_address)
                 print('n = ', self.n)
                 # Still in exploration
                 if self.n < self.args["Optimization"]["n_exploration"]:
@@ -578,9 +582,16 @@ class HIL:
                         _, self.start_time = self.cost.extract_data()
     
                 else:
+                    message = self.x[self.n,:].astype('str')
+                    # print(message)
+                    self.client_socket.sendto(message, self.server_address)
                     print(f"In the optimization loop {self.n}, parameter {self.x[self.n]}")
                     self._get_cost()
                     self.outlet.push_sample(self.x[self.n,:].tolist() + [0])
+                    message = ','.join(map(str, self.x[self.n,:]))
+
+                    print('\n\n\n\n', message)
+                    self.client_socket.sendto(message.encode('utf-8'), self.server_address)
                     if (self.cost_time - self.start_time) > self.args["Cost"][
                         "time"
                     ] and len(
