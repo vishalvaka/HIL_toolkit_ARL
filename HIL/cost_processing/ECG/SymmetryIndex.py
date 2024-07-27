@@ -229,9 +229,11 @@ class SymmetryIndex():
         
         # Step time variability
         cost = np.std(combined_step_times)
+        # cost = ECGComplexity.ETC(combined_step_times, "percentile")  # using effort-to-compress
         
         # # Stride time variability
         # cost = np.std(combined_stride_times)
+        # cost = ECGComplexity.ETC(combined_stride_times, "percentile")  # using effort-to-compress
 
         # # Step time regularity (Detrended Fluctuation Analysis)
         # dfa_index_step_times = ant.detrended_fluctuation(combined_step_times)
