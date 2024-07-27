@@ -6,6 +6,7 @@ import time
 import os
 import copy
 import abc
+# import antropy as ant
 
 # processing
 import neurokit2 as nk
@@ -20,6 +21,9 @@ from HIL.cost_processing.utils.inlet import InletOutlet
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+
+
+# sampling rate of Polar accelerometer = 200 Hz
 class SymmetryIndexInOut(InletOutlet):
     dtypes = [[], np.float32, np.float64, None, np.int32, np.int16, np.int8, np.int64]
 
@@ -207,7 +211,43 @@ class SymmetryIndex():
         print(f'step_time_left: {step_time_left}')            
         symmetry_index = abs((2 * (step_time_left - step_time_right) / (step_time_left + step_time_right)) * 100)
         print(f'symmetry Index in process_data function {symmetry_index.mean()}')
-        return symmetry_index.mean()
+        
+        # Step time array
+        # Interleave the left and right step times
+        combined_step_times = np.empty(step_time_left.size + step_time_right.size, dtype=step_time_left.dtype)
+        combined_step_times[0::2] = step_time_left
+        combined_step_times[1::2] = step_time_right
+
+        # Stride time array
+        # Interleave the left and right stride times
+        combined_stride_times = np.empty(stride_times_left.size + stride_times_right.size, dtype=stride_times_left.dtype)
+        combined_stride_times[0::2] = stride_times_left
+        combined_stride_times[1::2] = stride_times_right
+
+        # # Symmetry cost
+        # cost = symmetry_index.mean()
+        
+        # Step time variability
+        cost = np.std(combined_step_times)
+        
+        # # Stride time variability
+        # cost = np.std(combined_stride_times)
+
+        # # Step time regularity (Detrended Fluctuation Analysis)
+        # dfa_index_step_times = ant.detrended_fluctuation(combined_step_times)
+        # cost = dfa_index_step_times
+
+        # # Stride time regularity (Detrended Fluctuation Analysis)
+        # dfa_index_stride_times = ant.detrended_fluctuation(combined_stride_times)
+        # cost = dfa_index_stride_times
+
+        # # Step time mean
+        # cost = np.mean(combined_step_times)
+
+        # # Stride time mean
+        # cost = np.mean(combined_stride_times)
+
+        return cost
     
     def get_symmetryindex(self) -> float:
         """Send the processed Symmetry Index value"""
