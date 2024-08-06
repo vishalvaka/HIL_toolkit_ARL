@@ -9,6 +9,7 @@ import time
 import pylsl
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import numpy as np
 
 def find_arduino_ports():
     ports = list(serial.tools.list_ports.comports())
@@ -96,9 +97,9 @@ class SymmetryIndexFSRFromStream():
                     #         self.timestamps_fsr2.append(timestamp)
                     if line.startswith('(') and line.endswith(')'):
                         timeStamp, pressureCount, pressure1, pressure2 = line[1:-1].split(',')
-                        self.pressures_fsr1.append(pressure1)
-                        self.pressures_fsr2.append(pressure2)
-                        self.timestamps_fsr.append(timeStamp)
+                        self.pressures_fsr1.append(float(pressure1))
+                        self.pressures_fsr2.append(float(pressure2))
+                        self.timestamps_fsr.append(float(timeStamp))
                         # self.timestamps_fsr2.append(timeStamp)
                         # print(self.pressures_fsr1)
                 else:
