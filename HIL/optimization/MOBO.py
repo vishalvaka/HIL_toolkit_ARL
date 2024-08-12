@@ -222,8 +222,8 @@ class MultiObjectiveBayesianOptimization(object):
                 target_model.likelihood = GaussianLikelihood()
                 target_model.to(self.device)
                 mll = ExactMarginalLogLikelihood(target_model.likelihood, target_model)
-                target_model.Y_mean = train_y.mean(dim=-2, keepdim=True)
-                target_model.Y_std = train_y.std(dim=-2, keepdim=True)
+                target_model.Y_mean = train_y[:, i].mean(dim=-2, keepdim=True)
+                target_model.Y_std = train_y[:, i].std(dim=-2, keepdim=True)
                 fit_gpytorch_model(mll)
 
                 model_list = self.base_model_list[i] + [target_model]
@@ -347,8 +347,8 @@ class MultiObjectiveBayesianOptimization(object):
 
                 # model = SingleTaskGP(x, y[: obj_index].unsqueeze(-1))
                 model.to(self.device)
-                model.Y_mean = y.mean(dim=-2, keepdim=True)
-                model.Y_std = y.std(dim=-2, keepdim=True)
+                model.Y_mean = y[:, obj_index].mean(dim=-2, keepdim=True)
+                model.Y_std = y[:, obj_index].std(dim=-2, keepdim=True)
                 mll = ExactMarginalLogLikelihood(model.likelihood, model)
                 fit_gpytorch_model(mll)
                 self.base_model_list[obj_index].append(model)
@@ -458,9 +458,9 @@ class MultiObjectiveBayesianOptimization(object):
             name: t.expand(batch_size, *[-1 for _ in range(t.ndim)])
             for name, t in state_dict.items()
         }
-        model = SingleTaskGP(train_x_cv, train_y_cv, covar_module=ScaleKernel(batch_shape = [train_x_cv.shape[0]],
-                    base_kernel=RBFKernel(ard_num_dims=self.x_dim, batch_shape = [train_x_cv.shape[0]])))
-        model.likelihood = GaussianLikelihood(batch_shape=[train_x_cv.shape[0]])
+        model = SingleTaskGP(train_x_cv, train_y_cv, covar_module=ScaleKernel(batch_shape = [train_x.shape[0]],
+                    base_kernel=RBFKernel(ard_num_dims=self.x_dim, batch_shape = [train_x.shape[0]])))
+        model.likelihood = GaussianLikelihood(batch_shape=[train_x.shape[0]])
         model.Y_mean = train_y_cv.mean(dim=-2, keepdim=True)
         model.Y_std = train_y_cv.std(dim=-2, keepdim=True)
         model.load_state_dict(state_dict_expanded)
