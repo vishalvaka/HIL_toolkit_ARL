@@ -153,7 +153,7 @@ class SymmetryIndexFSRFromStream():
                         time_diffs2 = np.array(time_diffs2).mean()
                         # symmetry_index = np.std(time_diffs) / np.mean(time_diffs) * 100
 
-                        symmetry_index = abs((time_diffs1) - (time_diffs2)) / (0.5 * (time_diffs1 + time_diffs2))
+                        symmetry_index = (abs((time_diffs1) - (time_diffs2)) / (0.5 * (time_diffs1 + time_diffs2))) *100
                         self.outlet.push_sample([symmetry_index])
                         print(f'Symmetry index sent: {symmetry_index}')
                         print(time_diffs1, time_diffs2)
