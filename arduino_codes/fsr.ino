@@ -4,7 +4,7 @@ const int pressurePin2 = A1;  // Pin where the second pressure sensor is connect
 
 unsigned long previousMillis = 0;
 
-const long interval = 100;  // Interval at which to read sensors (1 second)
+const long interval = 10;  // Interval at which to read sensors (1 second)
 
 int pressureCount = 0;
 
