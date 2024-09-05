@@ -233,7 +233,7 @@ class HIL:
                     # message = self.x[self.n,:].astype('str')
                     message = ','.join(map(str, self.x[self.n,:]))
 
-                    print('\n\n\n\n', message)
+                    # print('\n\n\n\n', message)
                     self.client_socket.sendto(message.encode('utf-8'), self.server_address)
                     print(
                         f"In the exploration step {self.n}, parameter {self.x[self.n]}, len_cost {len(self.store_cost_data[0])}"
@@ -245,13 +245,13 @@ class HIL:
     
                     self._get_cost()    # here, self.start_time is set to time_stamp (time stamp of the cost function from the LSL)
                     self.outlet.push_sample(self.x[self.n,:].tolist() + [0, 0])   # cost has two objectives
-                    print(f'pushing sample {self.x[self.n,:].tolist() + [0, 0]}')
+                    # print(f'pushing sample {self.x[self.n,:].tolist() + [0, 0]}')
                     if (self.cost_time - self.start_time) > self.args["Multi_Objective_Cost"]["Cost1"][
                         "time"
                     ] and len(
                         self.store_cost_data[0]
                     ) > self.args["Multi_Objective_Cost"]["Cost1"]["n_samples"]:  # 30 for 120
-                        print('time diff ', self.cost_time - self.start_time)
+                        # print('time diff ', self.cost_time - self.start_time)
                         # Calculate the mean cost
                         # Extract the last 5 elements for each objective
                         last_n_elements = [obj[-self.SAMPLES:] for obj in self.store_cost_data]
@@ -262,50 +262,50 @@ class HIL:
                         print(f" cost is {mean_costs}")
                         # add reset time function 
                         # self.start_time=0 or time_stamp?
-                        # out = input("Press Y to record the data: N to remove it:")
+                        out = input("Press Y to record the data: N to remove it:")
                         # print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
-                        # if out == "N":
-                        #     self._reset_data_collection()
-                        #     print("#########################")
-                        #     print("########### recollecting #######")
-                        #     print("#########################")
-                        #     self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
-                        # else:
-                        if len(self.x_opt) < 1:
-                            self.x_opt = np.array([self.x[self.n]])
+                        if out == "N":
+                            self._reset_data_collection()
+                            print("#########################")
+                            print("########### recollecting #######")
+                            print("#########################")
+                            self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
                         else:
-                            self.x_opt = np.concatenate(
-                                (self.x_opt, np.array([self.x[self.n]]))
+                            if len(self.x_opt) < 1:
+                                self.x_opt = np.array([self.x[self.n]])
+                            else:
+                                self.x_opt = np.concatenate(
+                                    (self.x_opt, np.array([self.x[self.n]]))
+                                )
+                            
+                            # Extract the last 5 elements for each objective
+                            last_n_elements = [obj[-self.SAMPLES:] for obj in self.store_cost_data]
+
+                            # Calculate the mean cost for each objective
+                            mean_costs = [np.mean(obj) for obj in last_n_elements]
+
+                            if len(self.y_opt) < 1:
+                                self.y_opt = np.array([mean_costs])
+                            else:
+                                self.y_opt = np.concatenate(
+                                    (self.y_opt, np.array([mean_costs]))
+                                )
+
+                            print(
+                                f"recording cost function {self.y_opt[-1]}, for the parameter {self.x_opt[-1]}"
                             )
-                        
-                        # Extract the last 5 elements for each objective
-                        last_n_elements = [obj[-self.SAMPLES:] for obj in self.store_cost_data]
 
-                        # Calculate the mean cost for each objective
-                        mean_costs = [np.mean(obj) for obj in last_n_elements]
+                            self.outlet.push_sample(
+                                self.x_opt[-1].tolist() + self.y_opt[-1].flatten().tolist()         # cost has two objectives
+                            )   
+                            # The push_sample method expects a list for the sample to push into the outlet. 
+                            # If y_opt[-1] is a 2D array and you want to push it as a single sample, you can flatten it to a 1D list before pushing. 
+                            # y_opt[-1] is flattened to a 1D list and concatenated with x_opt[-1].tolist()
 
-                        if len(self.y_opt) < 1:
-                            self.y_opt = np.array([mean_costs])
-                        else:
-                            self.y_opt = np.concatenate(
-                                (self.y_opt, np.array([mean_costs]))
-                            )
-
-                        print(
-                            f"recording cost function {self.y_opt[-1]}, for the parameter {self.x_opt[-1]}"
-                        )
-
-                        self.outlet.push_sample(
-                            self.x_opt[-1].tolist() + self.y_opt[-1].flatten().tolist()         # cost has two objectives
-                        )   
-                        # The push_sample method expects a list for the sample to push into the outlet. 
-                        # If y_opt[-1] is a 2D array and you want to push it as a single sample, you can flatten it to a 1D list before pushing. 
-                        # y_opt[-1] is flattened to a 1D list and concatenated with x_opt[-1].tolist()
-
-                        self._reset_data_collection()
-                        self.n += 1
-                        # input("Enter to Continue")
-                        _, self.start_time = self.cost[0].extract_data()
+                            self._reset_data_collection()
+                            self.n += 1
+                            input("Enter to Continue")
+                            _, self.start_time = self.cost[0].extract_data()
     
                 # Exploration is done and starting the optimization
                 elif (
@@ -321,94 +321,16 @@ class HIL:
                     
                     print(f" cost is {mean_costs}")
                     
-                    # out = input("Press Y to record the data: N to remove it:")
+                    out = input("Press Y to record the data: N to remove it:")
                     # print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
-                    # if out == "N":
-                    #     self._reset_data_collection()
-                    #     print("################################")
-                    #     print("########### recollecting #######")
-                    #     print("################################")
-                    #     self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
-                    # else:
-                    print(f"starting the optimization.")
-                    if self.NORMALIZATION:
-                        norm_x = self._normalize_x(self.x_opt)
-                        norm_y = self._mean_normalize_y_multi(self.y_opt)
-                        # if self.args['Optimization']['GP'] == 'RGPE':
-                        #     self.RGPE_MOBO.run(norm_x, norm_y, self.n)
-                        # else:
-                        new_parameter = self.MOBO.generate_next_candidate(norm_x,norm_y)
-                        print(f"Next parameter without norm is {new_parameter}")
-                        new_parameter = self._denormalize_x(new_parameter)
-
+                    if out == "N":
+                        self._reset_data_collection()
+                        print("################################")
+                        print("########### recollecting #######")
+                        print("################################")
+                        self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
                     else:
-                        print(f'self.x_opt: {self.x_opt}, self.y_opt: {self.y_opt}')
-                        # if self.args['Optimization']['GP'] == 'RGPE':
-                        #     self.RGPE_MOBO.run(self.x_opt, self.y_opt, self.n)
-                        # else:
-                        new_parameter = self.MOBO.generate_next_candidate(
-                            self.x_opt,
-                            self.y_opt,
-                        )
-                    
-                    print(f"Next parameter is {new_parameter}")
-                    self.outlet.push_sample(self.x_opt[-1].tolist() + self.y_opt[-1].flatten().tolist())     # cost has two objectives
-
-                    # TODO Need to save the parameters and data for each iteration,
-                    self.x = np.concatenate(
-                        (
-                            self.x,
-                            new_parameter.reshape(
-                                1, self.args["Optimization"]["n_parms"]
-                            ),
-                        ),
-                        axis=0,
-                    )
-                    self.OPTIMIZATION = True
-                    _, self.start_time = self.cost[0].extract_data()
-
-                else:
-                    message = self.x[self.n,:].astype('str')
-                    # print(message)
-                    self.client_socket.sendto(message, self.server_address)
-                    print(f"In the optimization loop {self.n}, parameter {self.x[self.n]}")
-                    self._get_cost()
-                    self.outlet.push_sample(self.x[self.n,:].tolist() + [0, 0])    # cost has two objectives
-                    print(f'pushing sample {self.x[self.n,:].tolist() + [0, 0]}')
-
-                    message = ','.join(map(str, self.x[self.n,:]))
-
-                    print('\n\n\n\n', message)
-                    self.client_socket.sendto(message.encode('utf-8'), self.server_address)
-                    if (self.cost_time - self.start_time) > self.args["Multi_Objective_Cost"]["Cost1"][
-                        "time"
-                    ] and len(
-                        self.store_cost_data[0]
-                    ) > self.args["Multi_Objective_Cost"]["Cost1"]["n_samples"]:
-                        # out = input("Press Y to record the data: N to remove it:")
-                        # print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
-                        # if out == "N":
-                        #     self._reset_data_collection()
-                        #     print("################################")
-                        #     print("########### recollecting #######")
-                        #     print("################################")
-                        #     self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
-                        # else:
-                        self.x_opt = np.concatenate(
-                            (self.x_opt, np.array([self.x[self.n]]))
-                        )
-                        
-                        # Extract the last 5 elements for each objective
-                        last_n_elements = [obj[-self.SAMPLES:] for obj in self.store_cost_data]
-
-                        # Calculate the mean cost for each objective
-                        mean_costs = [np.mean(obj) for obj in last_n_elements]
-                        
-                        self.y_opt = np.concatenate((self.y_opt, np.array([mean_costs])))
-                        self.n += 1
-                        print(
-                            f"recording cost function {self.y_opt[-1]}, for the parameter {self.x_opt[-1]}"
-                        )
+                        print(f"starting the optimization.")
                         if self.NORMALIZATION:
                             norm_x = self._normalize_x(self.x_opt)
                             norm_y = self._mean_normalize_y_multi(self.y_opt)
@@ -416,11 +338,11 @@ class HIL:
                             #     self.RGPE_MOBO.run(norm_x, norm_y, self.n)
                             # else:
                             new_parameter = self.MOBO.generate_next_candidate(norm_x,norm_y)
-                            print(f"Next parameter without norm is {new_parameter}")
+                            # print(f"Next parameter without norm is {new_parameter}")
                             new_parameter = self._denormalize_x(new_parameter)
-    
+
                         else:
-                            print(f'self.x_opt: {self.x_opt}, self.y_opt: {self.y_opt}')
+                            # print(f'self.x_opt: {self.x_opt}, self.y_opt: {self.y_opt}')
                             # if self.args['Optimization']['GP'] == 'RGPE':
                             #     self.RGPE_MOBO.run(self.x_opt, self.y_opt, self.n)
                             # else:
@@ -428,8 +350,11 @@ class HIL:
                                 self.x_opt,
                                 self.y_opt,
                             )
+                        
                         print(f"Next parameter is {new_parameter}")
-                        # TODO Need to save the parameters and data for each iteration
+                        self.outlet.push_sample(self.x_opt[-1].tolist() + self.y_opt[-1].flatten().tolist())     # cost has two objectives
+
+                        # TODO Need to save the parameters and data for each iteration,
                         self.x = np.concatenate(
                             (
                                 self.x,
@@ -439,12 +364,87 @@ class HIL:
                             ),
                             axis=0,
                         )
-                        # self.outlet.push_sample([self.x_opt[self.n,:].tolist(), self.y_opt[-1].tolist()])
-                        self._reset_data_collection()
-                        # input("Enter to contiue")
+                        self.OPTIMIZATION = True
                         _, self.start_time = self.cost[0].extract_data()
-                        if self.n == self.args["Optimization"]["n_steps"]:
-                            self.MOBO.plot_final()
+
+                else:
+                    message = self.x[self.n,:].astype('str')
+                    # print(message)
+                    self.client_socket.sendto(message, self.server_address)
+                    print(f"In the optimization loop {self.n}, parameter {self.x[self.n]}")
+                    self._get_cost()
+                    self.outlet.push_sample(self.x[self.n,:].tolist() + [0, 0])    # cost has two objectives
+                    # print(f'pushing sample {self.x[self.n,:].tolist() + [0, 0]}')
+
+                    message = ','.join(map(str, self.x[self.n,:]))
+
+                    # print('\n\n\n\n', message)
+                    self.client_socket.sendto(message.encode('utf-8'), self.server_address)
+                    if (self.cost_time - self.start_time) > self.args["Multi_Objective_Cost"]["Cost1"][
+                        "time"
+                    ] and len(
+                        self.store_cost_data[0]
+                    ) > self.args["Multi_Objective_Cost"]["Cost1"]["n_samples"]:
+                        out = input("Press Y to record the data: N to remove it:")
+                        # print('self.start_time ' + str(self.start_time) + 'self.cost_time ' + str(self.cost_time))
+                        if out == "N":
+                            self._reset_data_collection()
+                            print("################################")
+                            print("########### recollecting #######")
+                            print("################################")
+                            self.outlet.push_sample(self.x[self.n,:].tolist() + [-1])
+                        else:
+                            self.x_opt = np.concatenate(
+                                (self.x_opt, np.array([self.x[self.n]]))
+                            )
+                            
+                            # Extract the last 5 elements for each objective
+                            last_n_elements = [obj[-self.SAMPLES:] for obj in self.store_cost_data]
+
+                            # Calculate the mean cost for each objective
+                            mean_costs = [np.mean(obj) for obj in last_n_elements]
+                            
+                            self.y_opt = np.concatenate((self.y_opt, np.array([mean_costs])))
+                            self.n += 1
+                            print(
+                                f"recording cost function {self.y_opt[-1]}, for the parameter {self.x_opt[-1]}"
+                            )
+                            if self.NORMALIZATION:
+                                norm_x = self._normalize_x(self.x_opt)
+                                norm_y = self._mean_normalize_y_multi(self.y_opt)
+                                # if self.args['Optimization']['GP'] == 'RGPE':
+                                #     self.RGPE_MOBO.run(norm_x, norm_y, self.n)
+                                # else:
+                                new_parameter = self.MOBO.generate_next_candidate(norm_x,norm_y)
+                                # print(f"Next parameter without norm is {new_parameter}")
+                                new_parameter = self._denormalize_x(new_parameter)
+        
+                            else:
+                                # print(f'self.x_opt: {self.x_opt}, self.y_opt: {self.y_opt}')
+                                # if self.args['Optimization']['GP'] == 'RGPE':
+                                #     self.RGPE_MOBO.run(self.x_opt, self.y_opt, self.n)
+                                # else:
+                                new_parameter = self.MOBO.generate_next_candidate(
+                                    self.x_opt,
+                                    self.y_opt,
+                                )
+                            print(f"Next parameter is {new_parameter}")
+                            # TODO Need to save the parameters and data for each iteration
+                            self.x = np.concatenate(
+                                (
+                                    self.x,
+                                    new_parameter.reshape(
+                                        1, self.args["Optimization"]["n_parms"]
+                                    ),
+                                ),
+                                axis=0,
+                            )
+                            # self.outlet.push_sample([self.x_opt[self.n,:].tolist(), self.y_opt[-1].tolist()])
+                            self._reset_data_collection()
+                            input("Enter to contiue")
+                            _, self.start_time = self.cost[0].extract_data()
+                            if self.n == self.args["Optimization"]["n_steps"]:
+                                self.MOBO.plot_final()
                 time.sleep(1)
 
         else:
@@ -683,7 +683,7 @@ class HIL:
         print(f"###### start functions are {self.x} ######")
 
     def _get_cost(self) -> None:
-        print('calling _get_cost')
+        # print('calling _get_cost')
         
         """This function extracts cost from pylsl, need to be called all the time."""
         
@@ -699,13 +699,13 @@ class HIL:
                         self.cost_time = time_stamp
                     self.store_cost_data[i].append(data)
                     if len(self.store_cost_data[i]) == 1 and i == 0:
-                        print(f'updating start time in get_cost with i = {i}')
+                        # print(f'updating start time in get_cost with i = {i}')
                         self.start_time = time_stamp
                         updated_start_time = True         
                     print(
                         f"got cost {self.store_cost_data[i][-1]}, parameter {self.x[self.n]}, time: {self.cost_time - self.start_time}"
                     )
-                    print(f'self.store_cost_data: {self.store_cost_data}')
+                    # print(f'self.store_cost_data: {self.store_cost_data}')
 
 
             # data, time_stamp = self.cost[0].extract_data()
@@ -733,7 +733,7 @@ class HIL:
                 self.cost_time = time_stamp
                 self.store_cost_data.append(data)
                 if len(self.store_cost_data) == 1:
-                    print('updating start time to ', time_stamp)
+                    # print('updating start time to ', time_stamp)
                     self.start_time = time_stamp
                 print(
                     f"got cost {self.store_cost_data[-1]}, parameter {self.x[self.n]}, time: {self.cost_time - self.start_time}"
