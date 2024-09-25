@@ -11,7 +11,8 @@ import time, logging
 # TODO add the documentation for these class
 class UDPSend(object):
     def __init__(self, target_ip: str = 'localhost', prediction_port: int = 10000,stopping_port:int = 50007) -> None:
-        self.target_ip = '192.168.101.20'
+        # self.target_ip = '192.168.101.20'
+        self.target_ip = '192.168.0.22'
         self.prediction_port = prediction_port
         self.stopping_port = stopping_port
         self._prediction = _UDP(self.target_ip, self.prediction_port) #type: ignore

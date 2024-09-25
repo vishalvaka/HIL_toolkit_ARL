@@ -44,7 +44,7 @@ class SymmetryIndexInOut(InletOutlet):
         self.store_data = np.array([])
 
         # Information about the outlet stream
-        info  = pylsl.StreamInfo(stream_name,  'Marker', 1, 0, 'float32', 'myuidw43537') #type: ignore
+        info  = pylsl.StreamInfo('Polar_symmetry',  'Marker', 1, 0, 'float32', 'myuidw43537') #type: ignore
         self.outlet = pylsl.StreamOutlet(info)
 
         # logging

@@ -206,11 +206,11 @@ class MultiObjectiveBayesianOptimization(object):
             
             for i in range(train_y.shape[-1]):
                 train_objective = train_y[:, i]
-                # models.append(
-                #     SingleTaskGP(train_x, train_objective.unsqueeze(-1))
-                # )
-                models.append(SingleTaskGP(train_x, train_objective.unsqueeze(-1), covar_module=ScaleKernel(
-                    base_kernel=RBFKernel(ard_num_dims=self.x_dim)), likelihood=GaussianLikelihood()))
+                models.append(
+                    SingleTaskGP(train_x, train_objective.unsqueeze(-1))
+                )
+                # models.append(SingleTaskGP(train_x, train_objective.unsqueeze(-1), covar_module=ScaleKernel(
+                #     base_kernel=RBFKernel(ard_num_dims=self.x_dim)), likelihood=GaussianLikelihood()))
             model = ModelListGP(*models)
             mll = SumMarginalLogLikelihood(model.likelihood, model)
             fit_gpytorch_model(mll)
