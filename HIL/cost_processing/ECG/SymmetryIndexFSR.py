@@ -12,9 +12,11 @@ from matplotlib.animation import FuncAnimation
 import numpy as np
 
 def find_arduino_ports():
-    ports = list(serial.tools.list_ports.comports())
-    for port in ports:
-        return port.device if 'Arduino' in port.description else None
+    # ports = list(serial.tools.list_ports.comports())
+    # for port in ports:
+    #     print(port.description)
+    #     return port.device if 'Arduino' in port.description else None
+    return 'COM5'
 
 def analyze_data(pressures):
     if not pressures:
@@ -122,33 +124,39 @@ class SymmetryIndexFSRFromStream():
                     # if widths_fsr1.size and widths_fsr2.size:
                     #     symmetry_index = abs(widths_fsr1.mean() - widths_fsr2.mean()) / ((widths_fsr1.mean() + widths_fsr2.mean()) / 2) * 100
                     # if len(pressures1) > 1 and len(pressures2) > 1:
-                    pressures_fsr1 = self.pressures_fsr1[-2400:]
-                    pressures_fsr2 = self.pressures_fsr2[-2400:]
-                    timestamps_fsr = self.timestamps_fsr[-2400:]
+                    pressures_fsr1 = self.pressures_fsr1[-24000:]
+                    pressures_fsr2 = self.pressures_fsr2[-24000:]
+                    timestamps_fsr = self.timestamps_fsr[-24000:]
 
                     peaks1, _ = find_peaks(pressures_fsr1, height=0)
                     peaks2, _ = find_peaks(pressures_fsr2, height=0)
 
-                    time_diffs = []
+                    time_diffs1 = []
+                    time_diffs2 = []
 
                     for peak1 in peaks1:
                         next_peaks2 = [peak for peak in peaks2 if peak > peak1]
                         if next_peaks2:
                             next_peak2 = next_peaks2[0]
                             time_diff = timestamps_fsr[next_peak2] - timestamps_fsr[peak1]
-                            time_diffs.append(time_diff)
+                            time_diffs1.append(time_diff)
 
                     for peak2 in peaks2:
                         next_peaks1 = [peak for peak in peaks1 if peak > peak2]
                         if next_peaks1:
                             next_peak1 = next_peaks1[0]
                             time_diff = timestamps_fsr[next_peak1] - timestamps_fsr[peak2]
-                            time_diffs.append(time_diff)
+                            time_diffs2.append(time_diff)
 
-                    if time_diffs:
-                        symmetry_index = np.std(time_diffs) / np.mean(time_diffs) * 100
+                    if time_diffs1 and time_diffs2:
+                        time_diffs1 = np.array(time_diffs1).mean()
+                        time_diffs2 = np.array(time_diffs2).mean()
+                        # symmetry_index = np.std(time_diffs) / np.mean(time_diffs) * 100
+
+                        symmetry_index = (abs((time_diffs1) - (time_diffs2)) / (0.5 * (time_diffs1 + time_diffs2))) *100
                         self.outlet.push_sample([symmetry_index])
                         print(f'Symmetry index sent: {symmetry_index}')
+                        print(time_diffs1, time_diffs2)
                     else:
                         print('No time differences calculated.')
                 else:
