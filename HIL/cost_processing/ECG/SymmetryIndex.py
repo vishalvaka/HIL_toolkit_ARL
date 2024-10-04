@@ -21,7 +21,9 @@ from HIL.cost_processing.utils.inlet import InletOutlet
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-
+# Signal processing library
+from scipy import signal
+from scipy.signal import butter, filtfilt
 
 # sampling rate of Polar accelerometer = 200 Hz
 class SymmetryIndexInOut(InletOutlet):
@@ -91,8 +93,8 @@ class SymmetryIndexInOut(InletOutlet):
 
         else:
             print('calling add data to instatialize self.raw_data')
-            self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[0].flatten()) # vertical acceleration
-            # self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[2].flatten()) # forward acceleration
+            # self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[0].flatten()) # vertical acceleration
+            self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[2].flatten()) # forward acceleration
             print('self.store_data.size ', self.store_data.size)
             self.symmetryIndex.add_data(self.store_data)
             
@@ -138,7 +140,7 @@ class SymmetryIndexInOut(InletOutlet):
 
 class SymmetryIndex():
     def __init__(self, sampling_rate: int ) -> None:
-        """Main processing class for the RMSSD data
+        """Main processing class for the Symmetry data
 
         Args:
             sampling_rate (int): Sampling rate of the data
@@ -181,6 +183,15 @@ class SymmetryIndex():
         self.raw_data = data
         print('raw data: \n\n\n', self.raw_data)
     
+
+    # Filtering step to smooth the signal and reduce noise
+    def butter_lowpass_filter(data, cutoff, fs, order=4):
+        nyquist = 0.5 * fs
+        normal_cutoff = cutoff / nyquist
+        b, a = butter(order, normal_cutoff, btype='low', analog=False)
+        y = filtfilt(b, a, data)
+        return y
+
     def _process_data(self) -> float:
         """Process the cleaned data
 
@@ -195,19 +206,30 @@ class SymmetryIndex():
 
         # Set distance based on the typical spacing observed or a fraction of the signal length
         distance = len(self.raw_data) // 10
-        # peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=height, distance=distance) # vertical acceleration # modify height and distance attribute depending on the postion of subject 
-        peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=-50, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
+
+        # Filter the data
+        # Sampling frequency (Hz)
+        fs = 200  
+
+        # Low-pass filter parameters (cutoff frequency in Hz)
+        cutoff = 5.0  # This will help smooth out high-frequency noise
+
+        filtered_signal = self.butter_lowpass_filter(-self.raw_data[-24000:], cutoff, fs) # last 2 minutes of the signal ~ 24,000 points considering 200 Hz sampling rate
+        peaks, _ = scipy.signal.find_peaks(filtered_signal, height=-100, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
+        
+        # Unfiltered signal
+        # peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=height, distance=distance) 
+        # peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=-50, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
         
         self.peaks = peaks
         
-        print(f'peaks: {len(peaks)}')
+        print(f'length of peaks: {len(peaks)}')
         intervals = np.diff(peaks)
 
-
-        stride_times_left = np.array([(intervals[i] + intervals[i + 1])/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
-        stride_times_right =  np.array([(intervals[i + 1] + intervals[i + 2])/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
-        step_time_left = np.array([intervals[i]/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
-        step_time_right = np.array([intervals[i + 1]/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
+        stride_times_left = np.array([(intervals[i] + intervals[i + 1])/fs for i in range(0, len(intervals) - 2, 2)])
+        stride_times_right =  np.array([(intervals[i + 1] + intervals[i + 2])/fs for i in range(0, len(intervals) - 2, 2)])
+        step_time_left = np.array([intervals[i]/fs for i in range(0, len(intervals) - 2, 2)])
+        step_time_right = np.array([intervals[i + 1]/fs for i in range(0, len(intervals) - 2, 2)])
         print(f'step_time_left: {step_time_left}')            
         symmetry_index = abs((2 * (step_time_left - step_time_right) / (step_time_left + step_time_right)) * 100)
         print(f'symmetry Index in process_data function {symmetry_index.mean()}')
@@ -225,10 +247,10 @@ class SymmetryIndex():
         combined_stride_times[1::2] = stride_times_right
 
         # # Symmetry cost
-        # cost = symmetry_index.mean()
+        cost = symmetry_index.mean()
         
         # Step time variability
-        cost = np.std(combined_step_times)
+        # cost = np.std(combined_step_times)
         # cost = ECGComplexity.ETC(combined_step_times, "percentile")  # using effort-to-compress
         
         # # Stride time variability
