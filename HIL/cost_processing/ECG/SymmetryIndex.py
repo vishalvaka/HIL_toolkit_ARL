@@ -214,6 +214,7 @@ class SymmetryIndex():
         # Low-pass filter parameters (cutoff frequency in Hz)
         cutoff = 5.0  # This will help smooth out high-frequency noise
 
+        # Filtered signal
         filtered_signal = self.butter_lowpass_filter(-self.raw_data[-24000:], cutoff, fs) # last 2 minutes of the signal ~ 24,000 points considering 200 Hz sampling rate
         peaks, _ = scipy.signal.find_peaks(filtered_signal, height=-100, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
         
