@@ -167,7 +167,7 @@ class HIL:
 
         # if args['GP'] == 'Regular':
         if self.MULTI_OBJECTIVE:
-            self.MOBO = MultiObjectiveBayesianOptimization(np.array(list(args["range"])) if not args["normalize"] else [[0.0], [1.0]], is_rgpe = args['GP'] == 'RGPE', x_dim=args['n_parms'])
+            self.MOBO = MultiObjectiveBayesianOptimization(np.array(list(args["range"])) if not args["normalize"] else [[0.0], [1.0]], is_rgpe = args['GP'] == 'RWGPE', x_dim=args['n_parms'])
         else:
             self.BO = BayesianOptimization(
                 n_parms=args["n_parms"],
@@ -175,9 +175,10 @@ class HIL:
                 model_save_path=args["model_save_path"],
                 acq = args["acquisition"],
                 Kernel=args["kernel_function"],
-                is_rgpe=args["GP"] == "RGPE"
+                is_rgpe=args["GP"] == "RWGPE"
                 )
-        # elif args['GP'] == 'RGPE':
+        
+        # elif args['GP'] == 'RWGPE':
         #     if self.MULTI_OBJECTIVE:
         #         self.RGPE_MOBO = self.BO_rgpe = MultiObjectiveBayesianOptimization_rgpe(n_params=args['n_parms'], 
         #         range=np.array(list(args['range'])), 
@@ -334,7 +335,7 @@ class HIL:
                         if self.NORMALIZATION:
                             norm_x = self._normalize_x(self.x_opt)
                             norm_y = self._mean_normalize_y_multi(self.y_opt)
-                            # if self.args['Optimization']['GP'] == 'RGPE':
+                            # if self.args['Optimization']['GP'] == 'RWGPE':
                             #     self.RGPE_MOBO.run(norm_x, norm_y, self.n)
                             # else:
                             new_parameter = self.MOBO.generate_next_candidate(norm_x,norm_y)
@@ -343,7 +344,7 @@ class HIL:
 
                         else:
                             # print(f'self.x_opt: {self.x_opt}, self.y_opt: {self.y_opt}')
-                            # if self.args['Optimization']['GP'] == 'RGPE':
+                            # if self.args['Optimization']['GP'] == 'RWGPE':
                             #     self.RGPE_MOBO.run(self.x_opt, self.y_opt, self.n)
                             # else:
                             new_parameter = self.MOBO.generate_next_candidate(
@@ -412,7 +413,7 @@ class HIL:
                             if self.NORMALIZATION:
                                 norm_x = self._normalize_x(self.x_opt)
                                 norm_y = self._mean_normalize_y_multi(self.y_opt)
-                                # if self.args['Optimization']['GP'] == 'RGPE':
+                                # if self.args['Optimization']['GP'] == 'RWGPE':
                                 #     self.RGPE_MOBO.run(norm_x, norm_y, self.n)
                                 # else:
                                 new_parameter = self.MOBO.generate_next_candidate(norm_x,norm_y)
@@ -421,7 +422,7 @@ class HIL:
         
                             else:
                                 # print(f'self.x_opt: {self.x_opt}, self.y_opt: {self.y_opt}')
-                                # if self.args['Optimization']['GP'] == 'RGPE':
+                                # if self.args['Optimization']['GP'] == 'RWGPE':
                                 #     self.RGPE_MOBO.run(self.x_opt, self.y_opt, self.n)
                                 # else:
                                 new_parameter = self.MOBO.generate_next_candidate(
@@ -474,6 +475,7 @@ class HIL:
                         self.warm_up = False
     
                     self._get_cost()
+                    # Inside your loop, after calling self._get_cost()
                     # if len(self.store_cost_data) == 1: #and self.start_time != 0:
                     #     print('in my if condition')
                     #     _, time_stamp = self.cost.extract_data()
@@ -548,7 +550,7 @@ class HIL:
                         if self.NORMALIZATION:
                             norm_x = self._normalize_x(self.x_opt)
                             norm_y = self._mean_normalize_y(self.y_opt)
-                            if self.args['Optimization']['GP']:
+                            if self.args['Optimization']['GP'] == 'RWGPE':
                                 new_parameter = self.BO_rgpe.run(norm_x, norm_y, self.n)
                             else:
                                 new_parameter = self.BO.run(norm_x.reshape(self.n, -1), norm_y.reshape(self.n, -1))
@@ -557,7 +559,7 @@ class HIL:
     
                         else:
                             norm_y = self._mean_normalize_y(self.y_opt)
-                            if self.args['Optimization']['GP'] == 'RGPE':
+                            if self.args['Optimization']['GP'] == 'RWGPE':
                                 new_parameter = self.BO_rgpe.run(self.x_opt.reshape(self.n, -1), self.y_opt.reshape(self.n, -1), self.n)
                             else:
                                 new_parameter = self.BO.run(
@@ -619,7 +621,7 @@ class HIL:
                             if self.NORMALIZATION:
                                 norm_x = self._normalize_x(self.x_opt)
                                 norm_y = self._mean_normalize_y(self.y_opt)
-                                if self.args['Optimization']['GP'] == 'RGPE':
+                                if self.args['Optimization']['GP'] == 'RWGPE':
                                     new_parameter = self.BO_rgpe.run(norm_x, norm_y, self.n)
                                 else:
                                     new_parameter = self.BO.run(norm_x.reshape(self.n, -1), norm_y.reshape(self.n, -1))
@@ -628,7 +630,7 @@ class HIL:
         
                             else:
                                 norm_y = self._mean_normalize_y(self.y_opt)
-                                if self.args['Optimization']['GP'] == 'RGPE':
+                                if self.args['Optimization']['GP'] == 'RWGPE':
                                     new_parameter = self.BO_rgpe.run(self.x_opt.reshape(self.n, -1), self.y_opt.reshape(self.n, -1), self.n)
                                 else:
                                     new_parameter = self.BO.run(
@@ -658,28 +660,29 @@ class HIL:
         opt_args = self.args["Optimization"]
         range_ = np.array(list(opt_args["range"]))
         # generate the initial parameters in the range of the parameter and in the shape of exploration x shape
-        self.x = np.random.uniform(
-            range_[0], range_[1], size=(opt_args["n_exploration"], opt_args["n_parms"])
-        )
+        # self.x = np.random.uniform(
+        #     range_[0], range_[1], size=(opt_args["n_exploration"], opt_args["n_parms"])
+        # )
+
         # self.x[0]=35.0
         # self.x[1]=75.0
         # self.x[2]=10.0\
-        # n_expl = self.args["Optimization"]["n_exploration"]
-        # range_arr = self.args["Optimization"]["range"]
-        # steps = []
-        # for i in range(len(range_arr[0])):
-        #     steps.append((range_arr[1][i] - range_arr[0][i]) / (n_expl - 1))
+        n_expl = self.args["Optimization"]["n_exploration"]
+        range_arr = self.args["Optimization"]["range"]
+        steps = []
+        for i in range(len(range_arr[0])):
+            steps.append((range_arr[1][i] - range_arr[0][i]) / (n_expl - 1))
 
-        # steps = [(range[1] - range[0]) / (n_expl - 1) for range in np.array(range_arr).T]
-        # print('steps', steps)
-        # self.x = [[range_arr[0][0]]]
-        # for i in range(1, n_expl):
-        #     self.x.append([range[0] + i * step for step, range in zip(steps, np.array(range_arr).T)])
-        # self.x = np.array(self.x).astype(float)
+        steps = [(range[1] - range[0]) / (n_expl - 1) for range in np.array(range_arr).T]
+        print('steps', steps)
+        self.x = [[range_arr[0][0]]]
+        for i in range(1, n_expl):
+            self.x.append([range[0] + i * step for step, range in zip(steps, np.array(range_arr).T)])
+        self.x = np.array(self.x).astype(float)
 
         # self.x = np.linspace(start=range_arr[0], stop=range_arr[1], num=n_expl)
         # np.random.seed(time.time())
-        # np.random.shuffle(self.x)
+        np.random.shuffle(self.x)
         print(f"###### start functions are {self.x} ######")
 
     def _get_cost(self) -> None:

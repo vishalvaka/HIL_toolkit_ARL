@@ -8,7 +8,7 @@ import re
 
 args = yaml.safe_load(open('configs/test_function.yml','r'))
 
-values = np.linspace(args['Optimization']['range'][0][0], args['Optimization']['range'][1][0], num=100000)
+test_x = np.linspace(args['Optimization']['range'][0][0], args['Optimization']['range'][1][0], num=10000)
 
 # output1 = values**2
 # output2 = (values - 2)**2
@@ -25,13 +25,8 @@ df_xy = pd.read_csv('models/iter_15/data.csv', delim_whitespace=True, header=Non
 
 x = np.array(df_xy.iloc[:, :args['Optimization']['n_parms']].values, dtype = np.float64).squeeze(-1)
 
-y = np.array(df_xy.iloc[:, args['Optimization']['n_parms']:].values, dtype = np.float64).squeeze()
-y = -y
+y = np.array(df_xy.iloc[:, args['Optimization']['n_parms']:].values, dtype = np.float64).squeeze() # y has the negated values
 
-# def f(x): #ZDT2 1-D
-#     x = np.array(x)
-
-#     return np.array([x, 1 - x ** 2])
 
 # def f(x): #Schaffer N1
 #     # print('recieved x: ', x)
@@ -59,10 +54,30 @@ y = -y
 #     f2 = (x * shift - 2) ** 2
 #     return np.array([f1, f2])
 
-def f(x): #ZDT1 1-D
+# def f(x): #ZDT1 1-D
+#     x = np.array(x)
+#     shift = 1.0
+#     f1 = x * shift
+#     f2 = 1 - np.sqrt(x * shift) 
+#     return np.array([f1, f2])
+
+
+# def f(x): #ZDT2 1-D
+#     x = np.array(x)
+#     shift = 1.0
+#     f1 = x * shift
+#     f2 = 1 - (x * shift) ** 2
+#     return np.array([f1, f2])
+
+def f(x): # Alpine function
     x = np.array(x)
-    shift = 1.0
-    return np.array([x * shift , 1 - np.sqrt(x * shift)])
+
+    shift  = (np.pi*0)/12.0
+
+    f1 = x * np.sin(x + np.pi + shift) + x / 10.0
+    f2 = x * np.cos(x + np.pi + shift) - x / 5.0
+    return np.array([f1, f2])
+
 
 # def f(x): #fronesca and fleming
 #     # n = len(x)
@@ -106,23 +121,41 @@ def f(x): #ZDT1 1-D
 
 # Y4_clean = -Y4_clean
 
-# Define the weights and alpha for the custom scalarization
+# Define the weights and alpha for the Chebyshev scalarization
 weights = torch.tensor([0.5, 0.5])
 alpha = 0.05
 
-# Define the custom scalarization function with min and sum components
+# Define the normalization function
+def normalize_objectives(values, min_values, max_values):
+    return (values - min_values) / (max_values - min_values)
+
+# Compute min and max values for normalization based on objective values in the range
+objective_values = np.array([-f(xi) for xi in test_x]) # Negative sign
+min_values = objective_values.min(axis=0)
+# print("Min values:", min_values)
+max_values = objective_values.max(axis=0)
+# print("Max values:", max_values)
+
+# Define the custom scalarization function 
 def custom_scalarization(x, weights, alpha=0.05):
-    values = -f(x)
-    weighted_values = weights * values
+    # Get the objective values from ZDT1
+    values = -f(x)  # Negative sign since it is a minimization problem
+    # Normalize the objective values
+    normalized_values = normalize_objectives(values, min_values, max_values)
+    # Convert to torch tensor for scalarization
+    normalized_values = torch.tensor(normalized_values)
+    # Apply the Chebyshev scalarization
+    weighted_values = weights * normalized_values
     return weighted_values.min(dim=-1).values + alpha * weighted_values.sum(dim=-1)
-    # return weighted_values.sum(dim = -1)
-custom_scalarized_values = np.array([custom_scalarization(xi, weights, alpha) for xi in values])
+
+# Calculate scalarized values for the given range
+custom_scalarized_values = np.array([custom_scalarization(xi, weights, alpha) for xi in test_x])
 
 fig, ax = plt.subplots(3, 1, figsize=(12, 24))
 
-ax[0].plot(values, custom_scalarized_values, label='Custom Scalarized Function (min + alpha * sum)', color='purple')
+ax[0].plot(test_x, custom_scalarized_values, label='Custom Scalarized Function (min + alpha * sum)', color='purple')
 ax[0].scatter(x, [custom_scalarization(xi, weights, alpha) for xi in x], c=np.arange(len(df_xy)), cmap='viridis', label='Explored Points', marker='o')
-if args['Optimization']['GP'] == 'RGPE':    
+if args['Optimization']['GP'] == 'RWGPE':    
     ax[0].set_title('Custom Scalarized Function and Points Explored by RGPE')
 else:
     ax[0].set_title('Custom Scalarized Function and Points Explored by GP')
@@ -135,8 +168,8 @@ distances = []
 distances = np.array(distances)
 for i, xi in enumerate(x):
     max_custom_scalarized_value = np.max(custom_scalarized_values)
-    max_custom_scalarization_at_x = custom_scalarization(xi, weights, alpha)
-    distance = max_custom_scalarized_value - max_custom_scalarization_at_x
+    custom_scalarization_at_x = custom_scalarization(xi, weights, alpha)
+    distance = max_custom_scalarized_value - custom_scalarization_at_x
     if distances.size == 0 or distance < np.min(distances):
         distances = np.append(distances, distance)
     else:
@@ -150,13 +183,12 @@ ax[1].set_ylabel('Distance')
 ax[1].legend()
 
 # Plot the components of the function
-# outputs = np.array([f(xi) for xi in values]).T
-Y4_clean = np.array([f(xi) for xi in values]).T
+Y4_clean = np.array([-f(xi) for xi in test_x]).T
 # print(outputs.shape)
-ax[2].plot(values, Y4_clean[0], label='Component 1', color='blue')
-ax[2].plot(values, Y4_clean[1], label='Component 2', color='green')
-ax[2].fill_between(values, Y4_clean[0] - np.std(Y4_clean[0]), Y4_clean[0] + np.std(Y4_clean[0]), color='blue', alpha=0.2)
-ax[2].fill_between(values, Y4_clean[1] - np.std(Y4_clean[1]), Y4_clean[1] + np.std(Y4_clean[1]), color='green', alpha=0.2)
+ax[2].plot(test_x, Y4_clean[0], label='Component 1', color='blue')
+ax[2].plot(test_x, Y4_clean[1], label='Component 2', color='green')
+ax[2].fill_between(test_x, Y4_clean[0] - np.std(Y4_clean[0]), Y4_clean[0] + np.std(Y4_clean[0]), color='blue', alpha=0.2)
+ax[2].fill_between(test_x, Y4_clean[1] - np.std(Y4_clean[1]), Y4_clean[1] + np.std(Y4_clean[1]), color='green', alpha=0.2)
 scatter = ax[2].scatter(x, y[:, 0], c=np.arange(len(df_xy)), cmap='viridis', label='Component 1 Points', marker='o')
 ax[2].scatter(x, y[:, 1], c=np.arange(len(df_xy)), cmap='viridis', label='Component 2 Points', marker='o')
 ax[2].set_title('Components with Points Explored')
@@ -171,36 +203,36 @@ plt.tight_layout()
 # distances_df = pd.DataFrame(distances)
 # distances_df.to_csv('models/distances/distances.csv', sep=' ', header=False, index=False)
 
-# Function to save the CSV with incremented filename
-def save_csv_incremented(folder_path, base_name="distances", data=None):
-    if data is None:
-        data = distances
+# # Function to save the CSV with incremented filename
+# def save_csv_incremented(folder_path, base_name="distances", data=None):
+#     if data is None:
+#         data = distances
 
-    # Check if the folder exists, if not create it
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+#     # Check if the folder exists, if not create it
+#     if not os.path.exists(folder_path):
+#         os.makedirs(folder_path)
 
-    # Find the highest number in the existing files
-    existing_files = os.listdir(folder_path)
-    base_pattern = re.compile(rf"{base_name}(\d+)\.csv")
-    max_index = 0
-    for file in existing_files:
-        match = base_pattern.match(file)
-        if match:
-            max_index = max(max_index, int(match.group(1)))
+#     # Find the highest number in the existing files
+#     existing_files = os.listdir(folder_path)
+#     base_pattern = re.compile(rf"{base_name}(\d+)\.csv")
+#     max_index = 0
+#     for file in existing_files:
+#         match = base_pattern.match(file)
+#         if match:
+#             max_index = max(max_index, int(match.group(1)))
 
-    # Increment the index for the new file
-    new_index = max_index + 1
-    file_path = os.path.join(folder_path, f"{base_name}{new_index}.csv")
+#     # Increment the index for the new file
+#     new_index = max_index + 1
+#     file_path = os.path.join(folder_path, f"{base_name}{new_index}.csv")
 
-    # Save the data to the CSV file
-    pd.DataFrame(data).to_csv(file_path, sep=' ', header=False, index=False)
+#     # Save the data to the CSV file
+#     pd.DataFrame(data).to_csv(file_path, sep=' ', header=False, index=False)
 
-    print(f"CSV file created: {file_path}")
+#     print(f"CSV file created: {file_path}")
 
-# Usage
-folder_path = f"models/distances/{args["Optimization"]["GP"]}"
-save_csv_incremented(folder_path, data=distances)
+# # Usage
+# folder_path = f"models/distances/{args["Optimization"]["GP"]}"
+# save_csv_incremented(folder_path, data=distances)
 
 # Show plot
 plt.show()

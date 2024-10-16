@@ -13,7 +13,7 @@ from botorch.optim import optimize_acqf
 from gpytorch.kernels import RBFKernel,ScaleKernel
 from gpytorch.priors import NormalPrior
 from HIL.optimization.RGPE_model import RGPE
-from botorch.sampling.samplers import SobolQMCNormalSampler
+from botorch.sampling.normal import SobolQMCNormalSampler
 
 # local imports
 from HIL.optimization.kernel import SE, Matern 
@@ -35,7 +35,7 @@ class BayesianOptimization(object):
     """
     Bayesian Optimization class for HIL
     """
-    def __init__(self, n_parms:int = 1, range: np.ndarray = np.array([0,10]), noise_range :np.ndarray = np.array([0.005, 10]), acq: str = "ei", maximization : bool = True, \
+    def __init__(self, n_parms:int = 1, range: np.ndarray = np.array([0,10]), noise_range :np.ndarray = np.array([0.001, 2]), acq: str = "ei", maximization : bool = True, \
         Kernel: str = "SE", model_save_path : str = "", device : str = "cpu" , plot: bool = False, optimization_iter: int = 500 , kernel_parms: Dict = {}, is_rgpe: bool = False) -> None:
         """Bayesian optimization for HIL
 
@@ -244,10 +244,11 @@ class BayesianOptimization(object):
             Tuple[torch.tensor, torch.tensor]: next parmaeter, value at the point
         """
         # tradition method
-        # mll = ExactMarginalLogLikelihood(self.likelihood, self.model)
-        # fit_gpytorch_model(mll) # check I need to change anything
-        # using manual gradient descent using adam optimizer.
-        self._training(self.model, self.likelihood, self.x, self.y)
+        mll = ExactMarginalLogLikelihood(self.likelihood, self.model)
+        fit_gpytorch_model(mll) # check I need to change anything
+        
+        # # using manual gradient descent using adam optimizer.
+        # self._training(self.model, self.likelihood, self.x, self.y)
 
 
         if self.acq_type == "ei":
@@ -260,7 +261,7 @@ class BayesianOptimization(object):
         new_point, value  = optimize_acqf(
             acq_function = acq,
             bounds=torch.tensor(self.range).to(self.device),
-            # bounds=torch.tensor(self.norm_range).to(self.device),
+            # bounds=torch.tensor(self.norm_range).to(self.device),   # if normalizing the range in the config file
             q = 1,
             num_restarts=1000,
             raw_samples=2000,
