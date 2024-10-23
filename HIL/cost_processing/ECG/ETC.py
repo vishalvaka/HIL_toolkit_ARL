@@ -147,7 +147,7 @@ class ETC():
 
         """Clean the data and perform a quality check
         """
-        self.cleaned = nk.ecg_clean(self.raw_data[-16000:], sampling_rate=self.SAMPLING_RATE)
+        self.cleaned = nk.ecg_clean(self.raw_data[-15960:], sampling_rate=self.SAMPLING_RATE)
         try:
             self.quality = nk.ecg_quality(self.cleaned, method = 'zhao', sampling_rate=self.SAMPLING_RATE)
         except ValueError:

@@ -55,7 +55,7 @@ class SymmetryIndexInOut(InletOutlet):
         # # setting some large RMMSD value at the start.
         # self.previous_HR = 1000
         self.skip_threshold = skip_threshold
-        self.SAMPLING_RATE = sampling_rate
+        self.SAMPLING_RATE = 200 # sampling_rate
 
         # Main processing class
         self.symmetryIndex = SymmetryIndex(self.SAMPLING_RATE)
@@ -128,7 +128,7 @@ class SymmetryIndexInOut(InletOutlet):
         #     self.first_data = True
         #     return
 
-        # symmetryIndex = - symmetryIndex # Multiplying by -1 because we want to maximize RMSSD
+        
         if not math.isnan(symmetryIndex):
             self.outlet.push_sample([symmetryIndex])
 
@@ -209,7 +209,7 @@ class SymmetryIndex():
 
         # Filter the data
         # Sampling frequency (Hz)
-        fs = 200  
+        fs = 200  # same as self.SAMPLING_RATE (need to merge both later)
 
         # Low-pass filter parameters (cutoff frequency in Hz)
         cutoff = 5.0  # This will help smooth out high-frequency noise
