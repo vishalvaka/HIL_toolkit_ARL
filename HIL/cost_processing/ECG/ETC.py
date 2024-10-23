@@ -22,7 +22,7 @@ from HIL.cost_processing.utils.inlet import InletOutlet
 
 import matplotlib.pyplot as plt
 
-# sampling rate of ECG: 133 Hz (real time) and 130 Hz (for post-processing)
+# According to PK, sampling rate of ECG: 133 Hz (real time) and 130 Hz (for post-processing)
 
 class ETCInOut(InletOutlet):
     dtypes = [[], np.float32, np.float64, None, np.int32, np.int16, np.int8, np.int64]
@@ -52,7 +52,7 @@ class ETCInOut(InletOutlet):
 
         # setting some large ETC value at the start.
         self.previous_HR = 1000
-        self.SAMPLING_RATE = sampling_rate
+        self.SAMPLING_RATE = 133 # sampling_rate
 
         # Main processing class
         self.etc = ETC(self.SAMPLING_RATE)
@@ -176,14 +176,18 @@ class ETC():
         # Calculate the frequency distribution of the ETC values
         frequency_distribution = Counter(moving_window_ETC)
 
-        # ETC_L1 = frequency_distribution.get(0.1429)
-        # ETC_L2 = frequency_distribution.get(0.4286)
-        # ETC_L3 = frequency_distribution.get(0.5714)
-        # ETC_L4 = frequency_distribution.get(0.7143)
-        # ETC_L5 = frequency_distribution.get(0.8571)
-        
-        # Calculate the frequency of occurrence of complex patterns (ETC>0.7)
-        ETC_L4L5 = sum([frequency_distribution.get(0.7143),frequency_distribution.get(0.8571)])
+         # Calculate the frequency distribution of the ETC values
+        frequency_distribution = Counter(moving_window_ETC)
+    
+        # Access the frequency distribution values only after it has been computed
+        ETC_L1 = frequency_distribution.get(0.1429, 0)  # Use a default of 0 if the key is not found
+        ETC_L2 = frequency_distribution.get(0.4286, 0)
+        ETC_L3 = frequency_distribution.get(0.5714, 0)
+        ETC_L4 = frequency_distribution.get(0.7143, 0)
+        ETC_L5 = frequency_distribution.get(0.8571, 0)
+    
+        # Calculate the frequency of occurrence of complex patterns (ETC > 0.7)
+        ETC_L4L5 = ETC_L4 + ETC_L5
         
         return ETC_L4L5
 
