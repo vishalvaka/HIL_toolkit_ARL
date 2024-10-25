@@ -658,32 +658,31 @@ class HIL:
 
     def _generate_initial_parameters(self) -> None:
         opt_args = self.args["Optimization"]
+        n_exploration = opt_args["n_exploration"]
         range_ = np.array(list(opt_args["range"]))
-        # generate the initial parameters in the range of the parameter and in the shape of exploration x shape
+        
+        # # generate random initial parameters
         # self.x = np.random.uniform(
         #     range_[0], range_[1], size=(opt_args["n_exploration"], opt_args["n_parms"])
         # )
+        # print(f"###### start functions are {self.x} ######")
 
-        # self.x[0]=35.0
-        # self.x[1]=75.0
-        # self.x[2]=10.0\
-        n_expl = self.args["Optimization"]["n_exploration"]
-        range_arr = self.args["Optimization"]["range"]
-        steps = []
-        for i in range(len(range_arr[0])):
-            steps.append((range_arr[1][i] - range_arr[0][i]) / (n_expl - 1))
+        # # Generate exploration parameters equally spaced in the frequency range
+        # n_expl = self.args["Optimization"]["n_exploration"]
+        # range_arr = self.args["Optimization"]["range"]
+        # steps = []
+        # for i in range(len(range_arr[0])):
+        #     steps.append((range_arr[1][i] - range_arr[0][i]) / (n_expl - 1))
 
-        steps = [(range[1] - range[0]) / (n_expl - 1) for range in np.array(range_arr).T]
-        print('steps', steps)
-        self.x = [[range_arr[0][0]]]
-        for i in range(1, n_expl):
-            self.x.append([range[0] + i * step for step, range in zip(steps, np.array(range_arr).T)])
-        self.x = np.array(self.x).astype(float)
+        # steps = [(range[1] - range[0]) / (n_expl - 1) for range in np.array(range_arr).T]
+        # print('steps', steps)
+        # self.x = [[range_arr[0][0]]]
+        # for i in range(1, n_expl):
+        #     self.x.append([range[0] + i * step for step, range in zip(steps, np.array(range_arr).T)])
+        # self.x = np.array(self.x).astype(float)
 
-        # self.x = np.linspace(start=range_arr[0], stop=range_arr[1], num=n_expl)
-        # np.random.seed(time.time())
-        np.random.shuffle(self.x)
-        print(f"###### start functions are {self.x} ######")
+        # np.random.shuffle(self.x)
+        # print(f"###### start functions are {self.x} ######")
 
     def _get_cost(self) -> None:
         # print('calling _get_cost')
