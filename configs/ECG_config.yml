@@ -10,7 +10,7 @@ Optimization:
   n_parms: 1 # number of parameters
   n_steps: 8 # number of steps
   n_exploration: 3 # number of exploration steps
-  range: [[90.0], [130.0]] # range of the parameters
+  range: [[90.0], [130.0]] # range of the parameters  # for 2 parameters [[90.0, 130.0], [90.0, 130.0]]    
   model_save_path: "models/"
   device: "cuda" # device to use
   n_start_points: 3 # number of start points

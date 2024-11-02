@@ -60,7 +60,9 @@ class BayesianOptimization(object):
         
         self.n_parms = n_parms
         self.range = range
-        self.norm_range = np.array([0,1]).reshape(2,1).astype(float) # normalized range of parameters (if Normalization is True in the config file)
+        # If noramlization is true in config file
+        # self.range = np.array([0,1]).reshape(2,1).astype(float) # normalized range of parameters (if Normalization is True in the config file)
+        # self.range = np.array([0,1,0,1]).reshape(2,2).astype(float) # normalized range of parameters for n_parm = 2 (if Normalization is True in the config file)
         self.maximization = maximization
         
         if len(model_save_path):
@@ -261,7 +263,6 @@ class BayesianOptimization(object):
         new_point, value  = optimize_acqf(
             acq_function = acq,
             bounds=torch.tensor(self.range).to(self.device),
-            # bounds=torch.tensor(self.norm_range).to(self.device),   # if normalizing the range in the config file
             q = 1,
             num_restarts=1000,
             raw_samples=2000,
