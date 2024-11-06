@@ -661,6 +661,8 @@ class HIL:
         n_exploration = opt_args["n_exploration"]
         range_ = np.array(list(opt_args["range"]))
         
+        # # # Generate initial parameters for 1-parameter optimization
+        
         # # generate random initial parameters
         # self.x = np.random.uniform(
         #     range_[0], range_[1], size=(opt_args["n_exploration"], opt_args["n_parms"])
@@ -684,6 +686,47 @@ class HIL:
         # np.random.shuffle(self.x)
         # print(f"###### start functions are {self.x} ######")
 
+        # # # Generate initial parameters for 2-parameter optimization
+        
+        opt_args = self.args['Optimization']
+        n_param = self.args['Optimization']['n_parms']
+        match n_param:
+            case 1:
+                # user-specified parameters
+                # self.x = np.array([[10], [13], [25]])  # for 1 parameter
+                
+                # Generate exploration parameters equally spaced in the frequency range
+                n_expl = self.args["Optimization"]["n_exploration"]
+                range_arr = self.args["Optimization"]["range"]
+                steps = []
+                for i in range(len(range_arr[0])):
+                    steps.append((range_arr[1][i] - range_arr[0][i]) / (n_expl - 1))
+
+                steps = [(range[1] - range[0]) / (n_expl - 1) for range in np.array(range_arr).T]
+                print('steps', steps)
+                self.x = [[range_arr[0][0]]]
+                for i in range(1, n_expl):
+                    self.x.append([range[0] + i * step for step, range in zip(steps, np.array(range_arr).T)])
+                self.x = np.array(self.x).astype(float)
+
+                np.random.shuffle(self.x)
+            case 2:
+                self.x = np.array([[0.2, -15.0], [0.2, -8.0], [0.7, -15.0], [0.7, -8.0]])  # for 2 parameters
+            case 3:
+                self.x = np.array([[10, 55, 33], [75, 55, 21], [80, 52, 13]])  # for 3 parameters
+
+        print(f'###### start functions are {self.x} ######')
+
+def _get_cost(self) -> None:
+    """This function extracts cost from pylsl, need to be called all the time."""
+
+    data_time_stamp = self.cost.extract_data()
+    # data_float(input("Insert cost: "))  # comment if don't want to input cost value manually
+    # time_stamp = time.time()
+    if time_stamp is not None:
+        data_data = data - 1  # matching maximization to minimization.
+        data_data = data_time_stamp
+        
     def _get_cost(self) -> None:
         # print('calling _get_cost')
         
