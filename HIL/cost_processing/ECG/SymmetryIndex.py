@@ -215,26 +215,46 @@ class SymmetryIndex():
         cutoff = 5.0  # This will help smooth out high-frequency noise
 
         # Filtered signal
-        filtered_signal = self.butter_lowpass_filter(-self.raw_data[-24000:], cutoff, fs) # last 2 minutes of the signal ~ 24,000 points considering 200 Hz sampling rate
-        peaks, _ = scipy.signal.find_peaks(filtered_signal, height=-100, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
+        # filtered_signal = self.butter_lowpass_filter(-self.raw_data[-24000:], cutoff, fs) # last 2 minutes of the signal ~ 24,000 points considering 200 Hz sampling rate
+        # peaks, _ = scipy.signal.find_peaks(filtered_signal, height=-100, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
         
-        # Unfiltered signal
-        # peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=height, distance=distance) 
-        # peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=-50, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
+        # Unfiltered signal 
+        peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=-100, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
         
         self.peaks = peaks
-        
         print(f'length of peaks: {len(peaks)}')
         intervals = np.diff(peaks)
 
-        stride_times_left = np.array([(intervals[i] + intervals[i + 1])/fs for i in range(0, len(intervals) - 2, 2)])
-        stride_times_right =  np.array([(intervals[i + 1] + intervals[i + 2])/fs for i in range(0, len(intervals) - 2, 2)])
-        step_time_left = np.array([intervals[i]/fs for i in range(0, len(intervals) - 2, 2)])
-        step_time_right = np.array([intervals[i + 1]/fs for i in range(0, len(intervals) - 2, 2)])
+
+        # # Calculate symmetry index
+        # stride_times_left = np.array([(intervals[i] + intervals[i + 1])/fs for i in range(0, len(intervals) - 2, 2)])
+        # stride_times_right =  np.array([(intervals[i + 1] + intervals[i + 2])/fs for i in range(0, len(intervals) - 2, 2)])
+        # step_time_left = np.array([intervals[i]/fs for i in range(0, len(intervals) - 2, 2)])
+        # step_time_right = np.array([intervals[i + 1]/fs for i in range(0, len(intervals) - 2, 2)])
+        # print(f'step_time_left: {step_time_left}')            
+        # symmetry_index = abs((2 * (step_time_left - step_time_right) / (step_time_left + step_time_right)) * 100)
+        # print(f'symmetry Index in process_data function {symmetry_index.mean()}')
+        
+
+        # Calculate symmetry index after filtering for missing peaks
+        intervals_in_sec = []
+        for value in intervals/fs:
+            if value > 1:
+                half_value = value / 2
+                intervals_in_sec.extend([half_value, half_value])
+            else:
+                intervals_in_sec.append(value)
+
+        stride_times_left = np.array([(intervals_in_sec[i] + intervals_in_sec[i + 1]) for i in range(0, len(intervals_in_sec) - 2, 2)])
+        stride_times_right =  np.array([(intervals_in_sec[i + 1] + intervals_in_sec[i + 2]) for i in range(0, len(intervals_in_sec) - 2, 2)])
+        
+        step_time_left = np.array([intervals_in_sec[i] for i in range(0, len(intervals_in_sec) - 2, 2)])
+        step_time_right = np.array([intervals_in_sec[i + 1] for i in range(0, len(intervals_in_sec) - 2, 2)])
         print(f'step_time_left: {step_time_left}')            
         symmetry_index = abs((2 * (step_time_left - step_time_right) / (step_time_left + step_time_right)) * 100)
         print(f'symmetry Index in process_data function {symmetry_index.mean()}')
-        
+
+
         # Step time array
         # Interleave the left and right step times
         combined_step_times = np.empty(step_time_left.size + step_time_right.size, dtype=step_time_left.dtype)
