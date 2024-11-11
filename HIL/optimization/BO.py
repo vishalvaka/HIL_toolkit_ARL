@@ -13,7 +13,8 @@ from botorch.optim import optimize_acqf
 from gpytorch.kernels import RBFKernel,ScaleKernel
 from gpytorch.priors import NormalPrior
 from HIL.optimization.RGPE_model import RGPE
-from botorch.sampling.normal import SobolQMCNormalSampler
+# from botorch.sampling.normal import SobolQMCNormalSampler # if there are version issues, use this
+from botorch.sampling.samplers import SobolQMCNormalSampler
 
 # local imports
 from HIL.optimization.kernel import SE, Matern 

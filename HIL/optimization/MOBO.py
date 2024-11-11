@@ -16,7 +16,8 @@ from botorch.acquisition.objective import GenericMCObjective
 from botorch.sampling import IIDNormalSampler
 # from gpytorch.likelihoods import GaussianLikelihood
 # from gpytorch.constraints import GreaterThan, Interval
-from botorch.sampling.normal import SobolQMCNormalSampler
+from botorch.sampling.samplers import SobolQMCNormalSampler
+#from botorch.sampling.normal import SobolQMCNormalSampler # If there are version issues, use this
 from HIL.optimization.kernel import SE, Matern
 from gpytorch.kernels import RBFKernel,ScaleKernel
 # from gpytorch.priors import NormalPrior
@@ -188,7 +189,8 @@ class MultiObjectiveBayesianOptimization(object):
         self.NUM_RESTARTS =  10
         self.RAW_SAMPLES = 1024
         self.device = 'cpu'
-        self.standard_bounds = torch.tensor(bounds)
+        # self.standard_bounds = torch.tensor(bounds)
+        self.standard_bounds = torch.tensor(bounds, dtype=torch.float, device=self.device)
         self.MC_SAMPLES = 256
         self.is_rgpe = is_rgpe
         self.base_model_path = base_model_path

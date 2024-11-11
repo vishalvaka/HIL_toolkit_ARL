@@ -717,15 +717,6 @@ class HIL:
 
         print(f'###### start functions are {self.x} ######')
 
-def _get_cost(self) -> None:
-    """This function extracts cost from pylsl, need to be called all the time."""
-
-    data_time_stamp = self.cost.extract_data()
-    # data_float(input("Insert cost: "))  # comment if don't want to input cost value manually
-    # time_stamp = time.time()
-    if time_stamp is not None:
-        data_data = data - 1  # matching maximization to minimization.
-        data_data = data_time_stamp
         
     def _get_cost(self) -> None:
         # print('calling _get_cost')
