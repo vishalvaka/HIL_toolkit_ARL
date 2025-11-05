@@ -15,9 +15,14 @@ from HIL.cost_processing.ECG import ECGComplexity
 # typing
 from typing import List
 
+# counter
+from collections import Counter
+
 from HIL.cost_processing.utils.inlet import InletOutlet
 
 import matplotlib.pyplot as plt
+
+# According to PK, sampling rate of ECG: 133 Hz (real time) and 130 Hz (for post-processing)
 
 class ETCInOut(InletOutlet):
     dtypes = [[], np.float32, np.float64, None, np.int32, np.int16, np.int8, np.int64]
@@ -47,7 +52,7 @@ class ETCInOut(InletOutlet):
 
         # setting some large ETC value at the start.
         self.previous_HR = 1000
-        self.SAMPLING_RATE = sampling_rate
+        self.SAMPLING_RATE = 133 # sampling_rate
 
         # Main processing class
         self.etc = ETC(self.SAMPLING_RATE)
@@ -142,11 +147,49 @@ class ETC():
 
         """Clean the data and perform a quality check
         """
-        self.cleaned = nk.ecg_clean(self.raw_data[-16000:], sampling_rate=self.SAMPLING_RATE)
+        self.cleaned = nk.ecg_clean(self.raw_data[-15960:], sampling_rate=self.SAMPLING_RATE)
         try:
             self.quality = nk.ecg_quality(self.cleaned, method = 'zhao', sampling_rate=self.SAMPLING_RATE)
         except ValueError:
             self.quality = 0
+
+    
+    def ETC_distributions(peaks_ms): 
+
+        # Given array (RR intervals)
+        l = ECGComplexity.symbolic_sequence_difference(peaks_ms)
+        
+        # Window size and overlap
+        window_size = 8
+        overlap = 7
+        step = window_size - overlap
+        
+        moving_window_ETC = []
+        
+        # Extract moving window of 8 elements with an overlap of 7 elements and calculate its ETC
+        for i in range(0, len(l)-window_size+1, step):
+            subsequence=l[i:i+window_size]
+            res = ECGComplexity.ETC(subsequence, "None")/(window_size-1)
+            res=np.round(res,4)
+            moving_window_ETC.append(res)
+        
+        # Calculate the frequency distribution of the ETC values
+        frequency_distribution = Counter(moving_window_ETC)
+
+         # Calculate the frequency distribution of the ETC values
+        frequency_distribution = Counter(moving_window_ETC)
+    
+        # Access the frequency distribution values only after it has been computed
+        ETC_L1 = frequency_distribution.get(0.1429, 0)  # Use a default of 0 if the key is not found
+        ETC_L2 = frequency_distribution.get(0.4286, 0)
+        ETC_L3 = frequency_distribution.get(0.5714, 0)
+        ETC_L4 = frequency_distribution.get(0.7143, 0)
+        ETC_L5 = frequency_distribution.get(0.8571, 0)
+    
+        # Calculate the frequency of occurrence of complex patterns (ETC > 0.7)
+        ETC_L4L5 = ETC_L4 + ETC_L5
+        
+        return ETC_L4L5
 
     def _process_data(self) -> float:
         """Process the cleaned data
@@ -179,8 +222,14 @@ class ETC():
             # Calculate ETC
             if len(peaks_ms)>3: # If length of the input series is less than 3, there will be errors in the ETC calculation
                 cost = ECGComplexity.ETC(peaks_ms, "difference")
+                
+                # # Three symbol patterns
                 # P0V, P1V, P2V = ECGComplexity.symbolic_dynamics(peaks_ms, "difference")
                 # cost = P0V  # Percentage of '0V' patterns
+                
+                # # ETC distributions (Complex patterns ETC>0.7)
+                # cost = self.ETC_distributions(peaks_ms)
+
             else:
                 cost = 0
             return cost

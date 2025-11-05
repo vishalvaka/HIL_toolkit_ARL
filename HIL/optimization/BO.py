@@ -13,6 +13,7 @@ from botorch.optim import optimize_acqf
 from gpytorch.kernels import RBFKernel,ScaleKernel
 from gpytorch.priors import NormalPrior
 from HIL.optimization.RGPE_model import RGPE
+# from botorch.sampling.normal import SobolQMCNormalSampler # if there are version issues, use this
 from botorch.sampling.samplers import SobolQMCNormalSampler
 
 # local imports
@@ -35,7 +36,7 @@ class BayesianOptimization(object):
     """
     Bayesian Optimization class for HIL
     """
-    def __init__(self, n_parms:int = 1, range: np.ndarray = np.array([0,10]), noise_range :np.ndarray = np.array([0.005, 10]), acq: str = "ei", maximization : bool = True, \
+    def __init__(self, n_parms:int = 1, range: np.ndarray = np.array([0,10]), noise_range :np.ndarray = np.array([0.001, 2]), acq: str = "ei", maximization : bool = True, \
         Kernel: str = "SE", model_save_path : str = "", device : str = "cpu" , plot: bool = False, optimization_iter: int = 500 , kernel_parms: Dict = {}, is_rgpe: bool = False) -> None:
         """Bayesian optimization for HIL
 
@@ -60,7 +61,9 @@ class BayesianOptimization(object):
         
         self.n_parms = n_parms
         self.range = range
-        self.norm_range = np.array([0,1]).reshape(2,1).astype(float) # normalized range of parameters (if Normalization is True in the config file)
+        # If noramlization is true in config file
+        # self.range = np.array([0,1]).reshape(2,1).astype(float) # normalized range of parameters (if Normalization is True in the config file)
+        # self.range = np.array([0,1,0,1]).reshape(2,2).astype(float) # normalized range of parameters for n_parm = 2 (if Normalization is True in the config file)
         self.maximization = maximization
         
         if len(model_save_path):
@@ -244,10 +247,11 @@ class BayesianOptimization(object):
             Tuple[torch.tensor, torch.tensor]: next parmaeter, value at the point
         """
         # tradition method
-        # mll = ExactMarginalLogLikelihood(self.likelihood, self.model)
-        # fit_gpytorch_model(mll) # check I need to change anything
-        # using manual gradient descent using adam optimizer.
-        self._training(self.model, self.likelihood, self.x, self.y)
+        mll = ExactMarginalLogLikelihood(self.likelihood, self.model)
+        fit_gpytorch_model(mll) # check I need to change anything
+        
+        # # using manual gradient descent using adam optimizer.
+        # self._training(self.model, self.likelihood, self.x, self.y)
 
 
         if self.acq_type == "ei":
@@ -260,7 +264,6 @@ class BayesianOptimization(object):
         new_point, value  = optimize_acqf(
             acq_function = acq,
             bounds=torch.tensor(self.range).to(self.device),
-            # bounds=torch.tensor(self.norm_range).to(self.device),
             q = 1,
             num_restarts=1000,
             raw_samples=2000,

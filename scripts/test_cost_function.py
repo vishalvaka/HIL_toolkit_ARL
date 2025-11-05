@@ -10,6 +10,7 @@ import yaml
 noise_level = 0.0
 
 args = yaml.safe_load(open('configs/test_function.yml','r'))
+
 # values = np.linspace(args['Optimization']['range'][0][0], args['Optimization']['range'][1][0], num=100)
 
 # output1 = values**2
@@ -20,12 +21,20 @@ args = yaml.safe_load(open('configs/test_function.yml','r'))
 
 # noise1 = 0.0
 # noise2 = 0.0
-def cost_function(x):
-    x = np.array(x)
-    # return sum(- (x - 5 ) ** 2  + 100 + np.random.rand(1) * 0.1)
-    shift = 0
-    return x * np.sin(x + np.pi + shift) + 0.1 * x
 
+# This is for testing single objective optimization
+# def cost_function(x):
+    
+#     x = np.array(x)
+    
+#     shift  = (np.pi*0)/12.0
+
+#     #f1 = x * np.sin(x + np.pi + shift) + x / 10.0
+#     f1 = (x - 2)**2
+#     return f1
+
+
+# This is for testing multi-objective optimization
 # def f(x): #ZDT1
 #     x = np.array(x)
 
@@ -54,14 +63,23 @@ def cost_function(x):
 #     f2 = 1 - (x * shift) ** 2
 #     return np.array([f1, f2])
 
-def f(x): #ZDT1 1-D
+# def f(x): #ZDT1 1-D
+#     x = np.array(x)
+
+#     shift  = 1.0
+
+#     f1 = x * shift 
+#     f2 = 1 - np.sqrt(x * shift) 
+
+#     return np.array([f1, f2])
+
+def f(x): # Alpine function
     x = np.array(x)
 
-    shift  = 1.0
+    shift  = (np.pi*0)/12.0
 
-    f1 = x * shift
-    f2 = 1 - np.sqrt(x * shift)
-
+    f1 = x * np.sin(x + np.pi + shift) + x / 10.0
+    f2 = x * np.cos(x + np.pi + shift) - x / 5.0
     return np.array([f1, f2])
 
 # def f(x): #fronesca and fleming
@@ -96,20 +114,6 @@ def f(x): #ZDT1 1-D
 #     return np.array([f1, f2])
 
 
-# def f(x): #levy and ackley 1d x
-#     print('recieved x: ', x)
-#     x = np.array(x)
-#     f1 = np.sin(3 * np.pi * x)**2 + (x - 1)**2 * (1 + np.sin(3 * np.pi * x)**2)
-#     a = 20
-#     b = 0.2
-#     c = 2 * np.pi
-    
-#     # Calculate the Ackley function
-#     term1 = -a * np.exp(-b * np.sqrt(0.5 * (x**2)))
-#     term2 = -np.exp(0.5 * (np.cos(c * x)))
-#     f2 = term1 + term2 + a + np.exp(1)
-#     return np.array([f1, f2])
-
 # def f(x, noise_level=noise_level):
 #     results = []
 #     for x_i in x:
@@ -140,21 +144,6 @@ def f(x): #ZDT1 1-D
 #         results.append(np.array(sub_results))
 #     return torch.tensor(results, dtype=torch.float32)
 
-# def f(x, A=10, noise_level = noise_level):
-#     results = []
-#     for x_i in x:
-#         # Rastrigin function for the first component
-#         rastrigin_result = A * len(x_i) + sum([(xi ** 2 - A * np.cos(2 * np.pi * xi)) for xi in x_i])
-        
-#         # Sphere function for the second component
-#         sphere_result = sum([xi ** 2 for xi in x_i])
-        
-#         sub_results = [
-#             np.array(rastrigin_result),
-#             np.array(sphere_result)
-#         ]
-#         results.append(np.array(sub_results))
-#     return torch.tensor(results, dtype=torch.float32)
 
 
 
@@ -260,11 +249,11 @@ class test_cost_function:
                     print('func_result', func_result)
                     result1 = func_result[0].item()  # Convert to Python scalar
                     result2 = func_result[1].item()  # Convert to Python scalar
-                    self.outlet.push_sample([result1 + np.random.normal(0, noise1)])
-                    self.outlet2.push_sample([result2 + np.random.normal(0, noise2)])
+                    # self.outlet.push_sample([result1 + np.random.normal(0, noise1)])
+                    # self.outlet2.push_sample([result2 + np.random.normal(0, noise2)])
 
-                    # self.outlet.push_sample([result1])
-                    # self.outlet2.push_sample([result2])
+                    self.outlet.push_sample([result1])
+                    self.outlet2.push_sample([result2])
                 # if counter > 10:
                 #     del self.inlet
                 #     self._get_streams()

@@ -6,6 +6,7 @@ import time
 import os
 import copy
 import abc
+# import antropy as ant
 
 # processing
 import neurokit2 as nk
@@ -20,6 +21,11 @@ from HIL.cost_processing.utils.inlet import InletOutlet
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+# Signal processing library
+from scipy import signal
+from scipy.signal import butter, filtfilt
+
+# sampling rate of Polar accelerometer = 200 Hz
 class SymmetryIndexInOut(InletOutlet):
     dtypes = [[], np.float32, np.float64, None, np.int32, np.int16, np.int8, np.int64]
 
@@ -40,7 +46,7 @@ class SymmetryIndexInOut(InletOutlet):
         self.store_data = np.array([])
 
         # Information about the outlet stream
-        info  = pylsl.StreamInfo(stream_name,  'Marker', 1, 0, 'float32', 'myuidw43537') #type: ignore
+        info  = pylsl.StreamInfo('Polar_symmetry',  'Marker', 1, 0, 'float32', 'myuidw43537') #type: ignore
         self.outlet = pylsl.StreamOutlet(info)
 
         # logging
@@ -49,7 +55,7 @@ class SymmetryIndexInOut(InletOutlet):
         # # setting some large RMMSD value at the start.
         # self.previous_HR = 1000
         self.skip_threshold = skip_threshold
-        self.SAMPLING_RATE = sampling_rate
+        self.SAMPLING_RATE = 200 # sampling_rate
 
         # Main processing class
         self.symmetryIndex = SymmetryIndex(self.SAMPLING_RATE)
@@ -87,8 +93,8 @@ class SymmetryIndexInOut(InletOutlet):
 
         else:
             print('calling add data to instatialize self.raw_data')
-            self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[0].flatten()) # vertical acceleration
-            # self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[2].flatten()) # forward acceleration
+            # self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[0].flatten()) # vertical acceleration
+            self.store_data = np.append(self.store_data.flatten(), np.array(self.buffer[0:ts.size,:]).T[2].flatten()) # forward acceleration
             print('self.store_data.size ', self.store_data.size)
             self.symmetryIndex.add_data(self.store_data)
             
@@ -122,7 +128,7 @@ class SymmetryIndexInOut(InletOutlet):
         #     self.first_data = True
         #     return
 
-        # symmetryIndex = - symmetryIndex # Multiplying by -1 because we want to maximize RMSSD
+        
         if not math.isnan(symmetryIndex):
             self.outlet.push_sample([symmetryIndex])
 
@@ -134,7 +140,7 @@ class SymmetryIndexInOut(InletOutlet):
 
 class SymmetryIndex():
     def __init__(self, sampling_rate: int ) -> None:
-        """Main processing class for the RMSSD data
+        """Main processing class for the Symmetry data
 
         Args:
             sampling_rate (int): Sampling rate of the data
@@ -177,6 +183,15 @@ class SymmetryIndex():
         self.raw_data = data
         print('raw data: \n\n\n', self.raw_data)
     
+
+    # Filtering step to smooth the signal and reduce noise
+    def butter_lowpass_filter(data, cutoff, fs, order=4):
+        nyquist = 0.5 * fs
+        normal_cutoff = cutoff / nyquist
+        b, a = butter(order, normal_cutoff, btype='low', analog=False)
+        y = filtfilt(b, a, data)
+        return y
+
     def _process_data(self) -> float:
         """Process the cleaned data
 
@@ -191,23 +206,93 @@ class SymmetryIndex():
 
         # Set distance based on the typical spacing observed or a fraction of the signal length
         distance = len(self.raw_data) // 10
-        # peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=height, distance=distance) # vertical acceleration # modify height and distance attribute depending on the postion of subject 
-        peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=-50, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
+
+        # Filter the data
+        # Sampling frequency (Hz)
+        fs = 200  # same as self.SAMPLING_RATE (need to merge both later)
+
+        # Low-pass filter parameters (cutoff frequency in Hz)
+        cutoff = 5.0  # This will help smooth out high-frequency noise
+
+        # Filtered signal
+        # filtered_signal = self.butter_lowpass_filter(-self.raw_data[-24000:], cutoff, fs) # last 2 minutes of the signal ~ 24,000 points considering 200 Hz sampling rate
+        # peaks, _ = scipy.signal.find_peaks(filtered_signal, height=-100, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
+        
+        # Unfiltered signal 
+        peaks, _ = scipy.signal.find_peaks(-self.raw_data[-24000:], height=-100, distance=75) # forward acceleration # modify height and distance attribute depending on the postion of subject
         
         self.peaks = peaks
-        
-        print(f'peaks: {len(peaks)}')
+        print(f'length of peaks: {len(peaks)}')
         intervals = np.diff(peaks)
 
 
-        stride_times_left = np.array([(intervals[i] + intervals[i + 1])/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
-        stride_times_right =  np.array([(intervals[i + 1] + intervals[i + 2])/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
-        step_time_left = np.array([intervals[i]/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
-        step_time_right = np.array([intervals[i + 1]/self.SAMPLING_RATE for i in range(0, len(intervals) - 2, 2)])
+        # # Calculate symmetry index
+        # stride_times_left = np.array([(intervals[i] + intervals[i + 1])/fs for i in range(0, len(intervals) - 2, 2)])
+        # stride_times_right =  np.array([(intervals[i + 1] + intervals[i + 2])/fs for i in range(0, len(intervals) - 2, 2)])
+        # step_time_left = np.array([intervals[i]/fs for i in range(0, len(intervals) - 2, 2)])
+        # step_time_right = np.array([intervals[i + 1]/fs for i in range(0, len(intervals) - 2, 2)])
+        # print(f'step_time_left: {step_time_left}')            
+        # symmetry_index = abs((2 * (step_time_left - step_time_right) / (step_time_left + step_time_right)) * 100)
+        # print(f'symmetry Index in process_data function {symmetry_index.mean()}')
+        
+
+        # Calculate symmetry index after filtering for missing peaks
+        intervals_in_sec = []
+        for value in intervals/fs:
+            if value > 1:
+                half_value = value / 2
+                intervals_in_sec.extend([half_value, half_value])
+            else:
+                intervals_in_sec.append(value)
+
+        stride_times_left = np.array([(intervals_in_sec[i] + intervals_in_sec[i + 1]) for i in range(0, len(intervals_in_sec) - 2, 2)])
+        stride_times_right =  np.array([(intervals_in_sec[i + 1] + intervals_in_sec[i + 2]) for i in range(0, len(intervals_in_sec) - 2, 2)])
+        
+        step_time_left = np.array([intervals_in_sec[i] for i in range(0, len(intervals_in_sec) - 2, 2)])
+        step_time_right = np.array([intervals_in_sec[i + 1] for i in range(0, len(intervals_in_sec) - 2, 2)])
         print(f'step_time_left: {step_time_left}')            
         symmetry_index = abs((2 * (step_time_left - step_time_right) / (step_time_left + step_time_right)) * 100)
         print(f'symmetry Index in process_data function {symmetry_index.mean()}')
-        return symmetry_index.mean()
+
+
+        # Step time array
+        # Interleave the left and right step times
+        combined_step_times = np.empty(step_time_left.size + step_time_right.size, dtype=step_time_left.dtype)
+        combined_step_times[0::2] = step_time_left
+        combined_step_times[1::2] = step_time_right
+
+        # Stride time array
+        # Interleave the left and right stride times
+        combined_stride_times = np.empty(stride_times_left.size + stride_times_right.size, dtype=stride_times_left.dtype)
+        combined_stride_times[0::2] = stride_times_left
+        combined_stride_times[1::2] = stride_times_right
+
+        # # Symmetry cost
+        cost = symmetry_index.mean()
+        
+        # Step time variability
+        # cost = np.std(combined_step_times)
+        # cost = ECGComplexity.ETC(combined_step_times, "percentile")  # using effort-to-compress
+        
+        # # Stride time variability
+        # cost = np.std(combined_stride_times)
+        # cost = ECGComplexity.ETC(combined_stride_times, "percentile")  # using effort-to-compress
+
+        # # Step time regularity (Detrended Fluctuation Analysis)
+        # dfa_index_step_times = ant.detrended_fluctuation(combined_step_times)
+        # cost = dfa_index_step_times
+
+        # # Stride time regularity (Detrended Fluctuation Analysis)
+        # dfa_index_stride_times = ant.detrended_fluctuation(combined_stride_times)
+        # cost = dfa_index_stride_times
+
+        # # Step time mean
+        # cost = np.mean(combined_step_times)
+
+        # # Stride time mean
+        # cost = np.mean(combined_stride_times)
+
+        return cost
     
     def get_symmetryindex(self) -> float:
         """Send the processed Symmetry Index value"""

@@ -54,7 +54,7 @@ class SE(kernel):
     
 
 class Matern(kernel):
-    def __init__(self, n_parms: int = 2,  length_scale : tuple[int, ...] = (0, 10), variance_constraints: tuple[int, ...] = (0, 10) )-> None :
+    def __init__(self, n_parms: int = 2,  length_scale : tuple[int, ...] = (0, 50), variance_constraints: tuple[int, ...] = (0, 50) )-> None :
         """
         SE kernel
         parms:

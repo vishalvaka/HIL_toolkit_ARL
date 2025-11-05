@@ -17,6 +17,7 @@ from botorch.sampling import IIDNormalSampler
 # from gpytorch.likelihoods import GaussianLikelihood
 # from gpytorch.constraints import GreaterThan, Interval
 from botorch.sampling.samplers import SobolQMCNormalSampler
+#from botorch.sampling.normal import SobolQMCNormalSampler # If there are version issues, use this
 from HIL.optimization.kernel import SE, Matern
 from gpytorch.kernels import RBFKernel,ScaleKernel
 # from gpytorch.priors import NormalPrior
@@ -27,6 +28,8 @@ import gpytorch
 from torch import Tensor
 from typing import Callable, Optional
 from botorch.utils.transforms import normalize
+from gpytorch.priors import GammaPrior
+import torch.optim as optim
 
 def get_chebyshev_scalarization_unnormalized(
     weights: Tensor, Y: Tensor, alpha: float = 0.05
@@ -91,6 +94,7 @@ def get_chebyshev_scalarization_unnormalized(
 
     # A boolean mask indicating if minimizing an objective
     minimize = weights < 0
+
 
     def obj(Y: Tensor, X: Optional[Tensor] = None) -> Tensor:
         # scale to [0,1]
@@ -185,7 +189,8 @@ class MultiObjectiveBayesianOptimization(object):
         self.NUM_RESTARTS =  10
         self.RAW_SAMPLES = 1024
         self.device = 'cpu'
-        self.standard_bounds = torch.tensor(bounds)
+        # self.standard_bounds = torch.tensor(bounds)
+        self.standard_bounds = torch.tensor(bounds, dtype=torch.float, device=self.device)
         self.MC_SAMPLES = 256
         self.is_rgpe = is_rgpe
         self.base_model_path = base_model_path
@@ -195,9 +200,8 @@ class MultiObjectiveBayesianOptimization(object):
         elif self.is_rgpe and self.base_model_path is not None:
             self.create_base_models()
             print('\n\n length of base model list: ', len(self.base_model_list[0]))
-        #bounds = torch.tensor([[-1.2], [1.2]])
+      
     
-
     # Use this code if using the traditional method of fitting the model using fit_gpytorch_model
     def initialize_model(self, train_x, train_y): 
         models = []
@@ -206,11 +210,17 @@ class MultiObjectiveBayesianOptimization(object):
             
             for i in range(train_y.shape[-1]):
                 train_objective = train_y[:, i]
+                Y_mean = train_y[:, i].mean(dim=0, keepdim=True)
+                Y_std = train_y[:, i].std(dim=0, keepdim=True)
+                train_objective_standardized = (train_objective - Y_mean)/Y_std
+                models.append(
+                    SingleTaskGP(train_x, train_objective.unsqueeze(-1))
+                )
                 # models.append(
-                #     SingleTaskGP(train_x, train_objective.unsqueeze(-1))
+                #     SingleTaskGP(train_x, train_objective_standardized.unsqueeze(-1))
                 # )
-                models.append(SingleTaskGP(train_x, train_objective.unsqueeze(-1), covar_module=ScaleKernel(
-                    base_kernel=RBFKernel(ard_num_dims=self.x_dim)), likelihood=GaussianLikelihood()))
+                # models.append(SingleTaskGP(train_x, train_objective.unsqueeze(-1), covar_module=ScaleKernel(
+                #     base_kernel=RBFKernel(ard_num_dims=self.x_dim)), likelihood=GaussianLikelihood()))               
             model = ModelListGP(*models)
             mll = SumMarginalLogLikelihood(model.likelihood, model)
             fit_gpytorch_model(mll)
@@ -222,14 +232,14 @@ class MultiObjectiveBayesianOptimization(object):
                 target_model.likelihood = GaussianLikelihood()
                 target_model.to(self.device)
                 mll = ExactMarginalLogLikelihood(target_model.likelihood, target_model)
-                target_model.Y_mean = train_y.mean(dim=-2, keepdim=True)
-                target_model.Y_std = train_y.std(dim=-2, keepdim=True)
+                target_model.Y_mean = train_y[:, i].mean(dim=-2, keepdim=True)
+                target_model.Y_std = train_y[:, i].std(dim=-2, keepdim=True)
                 fit_gpytorch_model(mll)
 
                 model_list = self.base_model_list[i] + [target_model]
                 # print('\n\n length of model_list', len(model_list))
                 weights = self.compute_weights(train_x, train_y[:, i].unsqueeze(-1), self.base_model_list[i], target_model, 256, self.device)
-                print(f'\n\n\n the final weights are: {weights}')
+                # print(f'\n\n\n the final weights are: {weights}')
                 models.append(RGPE(model_list, weights))
             model = ModelListGP(*models)
 
@@ -247,20 +257,17 @@ class MultiObjectiveBayesianOptimization(object):
             
             sampler=IIDNormalSampler(200, seed = 1234)
         
-            #train_x = normalize(x, bounds)
             with torch.no_grad():
                 #pred = model.posterior(normalize(train_x, bounds)).mean
                 pred = self.model.posterior(self.x).mean
-            # print(f'\n\npred: {pred}')
-            # acq_fun_list = []
-            # for _ in range(n_candidates):
+   
                 
             # weights = sample_simplex(2).squeeze()
             weights = torch.tensor([0.5, 0.5]) #use this if you want equal importance for both objectives
             objective = GenericMCObjective(
                 # get_weighted_sum(
-                # get_chebyshev_scalarization(
-                get_chebyshev_scalarization_unnormalized(
+                # get_chebyshev_scalarization_unnormalized(
+                get_chebyshev_scalarization(
                     weights,
                     pred
                 )
@@ -273,7 +280,6 @@ class MultiObjectiveBayesianOptimization(object):
                 X_baseline=self.x,
                 prune_baseline=True,
             )
-                # acq_fun_list.append(acq_fun)
             
             
 
@@ -347,8 +353,8 @@ class MultiObjectiveBayesianOptimization(object):
 
                 # model = SingleTaskGP(x, y[: obj_index].unsqueeze(-1))
                 model.to(self.device)
-                model.Y_mean = y.mean(dim=-2, keepdim=True)
-                model.Y_std = y.std(dim=-2, keepdim=True)
+                model.Y_mean = y[:, obj_index].mean(dim=-2, keepdim=True)
+                model.Y_std = y[:, obj_index].std(dim=-2, keepdim=True)
                 mll = ExactMarginalLogLikelihood(model.likelihood, model)
                 fit_gpytorch_model(mll)
                 self.base_model_list[obj_index].append(model)
@@ -458,9 +464,9 @@ class MultiObjectiveBayesianOptimization(object):
             name: t.expand(batch_size, *[-1 for _ in range(t.ndim)])
             for name, t in state_dict.items()
         }
-        model = SingleTaskGP(train_x_cv, train_y_cv, covar_module=ScaleKernel(batch_shape = [train_x_cv.shape[0]],
-                    base_kernel=RBFKernel(ard_num_dims=self.x_dim, batch_shape = [train_x_cv.shape[0]])))
-        model.likelihood = GaussianLikelihood(batch_shape=[train_x_cv.shape[0]])
+        model = SingleTaskGP(train_x_cv, train_y_cv, covar_module=ScaleKernel(batch_shape = [train_x.shape[0]],
+                    base_kernel=RBFKernel(ard_num_dims=self.x_dim, batch_shape = [train_x.shape[0]])))
+        model.likelihood = GaussianLikelihood(batch_shape=[train_x.shape[0]])
         model.Y_mean = train_y_cv.mean(dim=-2, keepdim=True)
         model.Y_std = train_y_cv.std(dim=-2, keepdim=True)
         model.load_state_dict(state_dict_expanded)
@@ -481,6 +487,7 @@ class MultiObjectiveBayesianOptimization(object):
     def plot_final(self):
 
         test_x = np.linspace(self.standard_bounds[0], self.standard_bounds[1], 100)
+        test_x = torch.from_numpy(test_x).float()
         self.model.eval()
 
         # with torch.no_grad(), gpytorch.settings.fast_pred_var():
@@ -505,31 +512,34 @@ class MultiObjectiveBayesianOptimization(object):
         #     plt.legend()
         #     plt.show()
 
-        for i, model in enumerate(self.model.models):
-            with torch.no_grad(), gpytorch.settings.fast_pred_var():
-                observed_pred = model.likelihood(model(test_x))
-                # print("Mean shape:", observed_pred.mean.shape)
-                # print("Covariance shape:", observed_pred.covariance_matrix.shape)
+        # for i, model in enumerate(self.model.models):
+        #     with torch.no_grad(), gpytorch.settings.fast_pred_var():
+        #         observed_pred = model.likelihood(model(test_x))
+        #         if isinstance(observed_pred, gpytorch.distributions.MultivariateNormal):
+        #             mean = -observed_pred.mean
+        #             try:
+        #                 variance = observed_pred.variance
+        #             except AttributeError:
+        #                 variance = observed_pred.covariance_matrix.diag()
+        #         else:
+        #             mean = -observed_pred[0].mean
+        #             try:
+        #                 variance = observed_pred[0].variance
+        #             except AttributeError:
+        #                 variance = observed_pred[0].covariance_matrix.diag()
 
-                mean = -observed_pred.mean
-                try:
-                    variance = observed_pred.variance
-                except Exception as e:
-                    print("Error accessing variance:", e)
-                    continue  # Skip this iteration to avoid breaking the loop
-
-                plt.figure(figsize=(10, 6))
-                plt.plot(test_x.numpy().squeeze(), mean.detach().numpy(), 'b', label='Mean')
-                plt.fill_between(test_x.numpy().squeeze(), 
-                    mean.numpy() - 2 * variance.sqrt().numpy(), 
-                    mean.numpy() + 2 * variance.sqrt().numpy(), 
-                    alpha=0.3, color='blue')
-                plt.scatter(self.x, -self.y[:, i], color='blue')
-                plt.xlabel('x')
-                plt.ylabel('y')
-                plt.title(f'objective {i+1}')
-                plt.legend()
-                plt.show()
+        #         plt.figure(figsize=(10, 6))
+        #         plt.plot(test_x.numpy().squeeze(), mean.detach().numpy(), 'b', label='Mean')
+        #         plt.fill_between(test_x.numpy().squeeze(), 
+        #             mean.numpy() - 2 * variance.sqrt().numpy(), 
+        #             mean.numpy() + 2 * variance.sqrt().numpy(), 
+        #             alpha=0.3, color='blue')
+        #         plt.scatter(self.x, -self.y[:, i], color='blue')
+        #         plt.xlabel('x')
+        #         plt.ylabel('y')
+        #         plt.title(f'{'RGPE' if self.is_rgpe else 'Regular GP'} objective {i+1}')
+        #         plt.legend()
+        #         plt.show()
 
 
         # self.base_model_list = base_model_list   

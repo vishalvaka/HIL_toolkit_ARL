@@ -1,19 +1,19 @@
 
 Cost:
-  Name: "Met_cost" # name of the cost function stream
-  time: 10 # time of the cost function stream. (default:90)
-  n_samples: 5
+  Name: "ECG_complexity" # name of the cost function stream 
+  time: 120 # time of the cost function stream. (default:120)
+  n_samples: 1
   avg_time: 14 # average time of the cost function stream.
   mean_time: 5 # mean time of the cost function.
 
 Optimization:
-  n_parms: 2 # number of parametes
-  n_steps: 8 # number of steps
-  n_exploration: 3 # number of exploration steps
-  range: [[10.0, 0.46], [30.0, 0.47]] # range of the parameters
+  n_parms: 2 # number of parameters
+  n_steps: 10 # number of steps
+  n_exploration: 4 # number of exploration steps
+  range: [[0.1, 0.9], [-20.0, -5.0]] # range of the parameters  # for 2 parameters [[90.0, 130.0], [90.0, 130.0]]    
   model_save_path: "models/"
   device: "cuda" # device to use
-  n_start_points: 3 # number of start points
+  n_start_points: 4 # number of start points
   acquisition: 'ei'
   kernel_function: "SE"
   GP: "Regular"
@@ -22,14 +22,14 @@ Optimization:
 
 Multi_Objective_Cost:
   Cost1:
-    Name: "Symmetry_Index" # name of the first cost function stream
-    time: 120 # time of the first cost function stream. (default: 90)
+    Name: "Polar_symmetry" # name of the first cost function stream
+    time: 120 # time of the first cost function stream. (default: 120)
     n_samples: 5
     avg_time: 14 # average time of the first cost function stream.
     mean_time: 5 # mean time of the first cost function.
   Cost2:
     Name: "Met_cost" # name of the second cost function stream
-    time: 120 # time of the second cost function stream. (default: 90)
+    time: 120 # time of the second cost function stream. (default: 120)
     n_samples: 5
     avg_time: 14 # average time of the second cost function stream.
     mean_time: 5 # mean time of the second cost function.  

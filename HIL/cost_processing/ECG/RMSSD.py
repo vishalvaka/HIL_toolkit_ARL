@@ -49,7 +49,7 @@ class RMSSDInOut(InletOutlet):
         # setting some large RMMSD value at the start.
         self.previous_HR = 1000
         self.skip_threshold = skip_threshold
-        self.SAMPLING_RATE = sampling_rate
+        self.SAMPLING_RATE = 133 # sampling_rate
 
         # Main processing class
         self.rmssd = RMSSD(self.SAMPLING_RATE)
@@ -141,7 +141,7 @@ class RMSSD():
 
         """Clean the data and perform a quality check
         """
-        self.cleaned = nk.ecg_clean(self.raw_data[-8000:], sampling_rate=self.SAMPLING_RATE)
+        self.cleaned = nk.ecg_clean(self.raw_data[-15960:], sampling_rate=self.SAMPLING_RATE)
 
         try:
             self.quality = nk.ecg_quality(self.cleaned, method = 'zhao', sampling_rate=self.SAMPLING_RATE)

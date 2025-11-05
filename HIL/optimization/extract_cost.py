@@ -9,9 +9,12 @@ class ExtractCost:
 
     def __init__(self, cost_name: str = 'Met_cost', number_samples: int = 2) -> None:
         self.stream = pylsl.resolve_streams()
+        for info in self.stream:
+            print(info.name())
         self.cost_name = cost_name
         # check the if the can cost is streaming
         COST_PRESENT = self._check_cost()
+        print("self.cost_name:", self.cost_name)
         if not COST_PRESENT:
             raise NameError
         self._setup_stream(number_samples)
